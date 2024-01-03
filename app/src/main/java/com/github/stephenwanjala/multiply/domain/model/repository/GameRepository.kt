@@ -5,4 +5,5 @@ import com.github.stephenwanjala.multiply.domain.model.Game
 interface GameRepository {
     fun startNewGame(): Game
     fun checkAnswer(mathProblem: String, userAnswer: Int): Game
+    fun generateOptions(correctAnswer: Int): List<Int>
 }

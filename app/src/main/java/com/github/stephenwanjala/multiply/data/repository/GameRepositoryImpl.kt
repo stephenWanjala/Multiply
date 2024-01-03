@@ -16,7 +16,9 @@ class GameRepositoryImpl: GameRepository {
         val newPoints = if (userAnswer == correctAnswer) 1 else 0
         val newGame = currentGame?.copy(
             points = currentGame!!.points + newPoints,
-            lives = if (userAnswer != correctAnswer) currentGame!!.lives - 1 else currentGame!!.lives
+            lives = if (userAnswer != correctAnswer) currentGame!!.lives - 1 else currentGame!!.lives,
+            correctAnswer = correctAnswer.toString(),
+            options = generateOptions(correctAnswer)
         )
         currentGame = newGame
         return newGame ?: throw IllegalStateException("Game not started.")
@@ -31,5 +33,29 @@ class GameRepositoryImpl: GameRepository {
         // Extract the two numbers from the math problem and calculate the correct answer
         val (operand1, operand2) = mathProblem.split(" * ")
         return operand1.toInt() * operand2.toInt()
+    }
+
+    override fun generateOptions(correctAnswer: Int): List<Int> {
+        val options = mutableListOf(correctAnswer)
+
+        // Generate three incorrect answers
+        repeat(3) {
+            var incorrectAnswer: Int
+            do {
+                // Generate a random incorrect answer
+                incorrectAnswer = generateRandomAnswer()
+            } while (options.contains(incorrectAnswer)) // Ensure uniqueness
+            options.add(incorrectAnswer)
+        }
+
+        // Shuffle the options to randomize their order
+        options.shuffle()
+
+        return options
+    }
+
+    private fun generateRandomAnswer(): Int {
+        // Logic to generate a random incorrect answer (e.g., within a specific range)
+        return (1..100).random()
     }
 }
