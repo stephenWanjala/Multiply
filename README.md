@@ -1,5 +1,5 @@
 ### Multiplication Training Game
-Welcome to the Multiplication Training Game! This Android app is designed to help users improve their multiplication skills in a fun and interactive way.
+ This simple Android app  to help kids improve their multiplication skills in a fun and interactive way.
 
 #### Overview
 The game presents users with single-digit multiplication problems, and they must provide the correct answer before the problem reaches the bottom of the screen. The user starts with three lives, and each correct answer earns them one point. However, if the user fails to answer in time or provides an incorrect answer, they lose a life.
