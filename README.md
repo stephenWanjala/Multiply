@@ -26,7 +26,6 @@ The game presents users with single-digit multiplication problems, and they must
 Clone the repository:
 
 ```bash
-Copy code
 git https://github.com/stephenWanjala/Multiply.git
 ```
 <p>Open the project in Android Studio.</p>
