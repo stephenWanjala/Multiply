@@ -1,4 +1,4 @@
-package com.stephenwanjala.multiply
+package com.stephenwanjala.multiply.game.screens.gamescreen
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf

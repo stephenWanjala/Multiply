@@ -1,18 +1,20 @@
 [versions]
 agp = "8.8.0"
 kotlin = "2.1.10"
+kotlinxSerializationVersion="3.0.3"
 coreKtx = "1.15.0"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
 lifecycleRuntimeKtx = "2.8.7"
-ksp="2.1.0-1.0.29"
+ksp="2.1.10-1.0.29"
 activityCompose = "1.10.0"
-composeBom = "2025.01.00"
+composeBom = "2025.01.01"
 hiltCompiler = "2.53.1"
 hiltNavigationCompose = "1.2.0"
-material3-adaptive="1.1.0-alpha09"
+material3-adaptive="1.1.0-beta01"
 datastorePreferences = "1.1.1"
+navigationCompose = "2.8.6"
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -21,6 +23,7 @@ androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-co
 androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycleRuntimeKtx" }
 androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleRuntimeKtx" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
 androidx-ui = { group = "androidx.compose.ui", name = "ui" }
 androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
@@ -35,7 +38,7 @@ hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", ve
 androidx-material3-adaptive-navigation-suite = { module = "androidx.compose.material3:material3-adaptive-navigation-suite" }
 androidx-compose-material3-adaptive-navigation = { module = "androidx.compose.material3.adaptive:adaptive-navigation", version.ref = "material3-adaptive" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
-
+kotlin-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "kotlinxSerializationVersion" }
 
 
 [plugins]
