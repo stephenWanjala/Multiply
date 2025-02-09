@@ -1,5 +1,3 @@
-import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin.Companion.kotlinNodeJsRootExtension
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -26,7 +24,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -44,6 +43,8 @@ android {
         compose = true
     }
 }
+
+
 
 dependencies {
 
@@ -69,6 +70,7 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.compose.material3.adaptive.navigation)
     ksp(libs.hilt.compiler)
-    implementation(libs.kotlin.serialization.kotlinx.json )
+    implementation(libs.kotlin.serialization.kotlinx.json)
     implementation(libs.androidx.navigation.compose)
 }
+

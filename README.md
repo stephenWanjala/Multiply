@@ -43,9 +43,9 @@ Build and run the app on your Android device or emulator.
 
 ## Screenshots
 
-| Screenshot 1                                         | Screenshot 2                                         | Screenshot 3                                         |
-|------------------------------------------------------|------------------------------------------------------|------------------------------------------------------|
-| ![Screenshot 1](docs/Screenshot_20250130_042320.png) | ![Screenshot 2](docs/Screenshot_20250130_042345.png) | ![Screenshot 3](docs/Screenshot_20250130_042028.png) |
+| Welcome Screen                      | Game Instructions                            | GamePlay                        | GamePlay   GameOver                  | Game Settings                  |
+|-------------------------------------|----------------------------------------------|---------------------------------|--------------------------------------|--------------------------------|
+| ![welcome Screen](docs/welcome.gif) | ![Game Instructions ](docs/instructions.gif) | ![gameplay ](docs/gameplay.gif) | ![GameOver](docs/samplegameover.gif) | ![Settings](docs/settings.png) |
 
 ##### Acknowledgments
 

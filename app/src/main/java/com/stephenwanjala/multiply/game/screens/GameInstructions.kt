@@ -30,6 +30,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -42,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.PreviewLightDark
@@ -56,9 +58,10 @@ import kotlin.random.Random
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun InstructionsScreen(onStartGame: () -> Unit,navigateUp:()->Unit) {
+fun InstructionsScreen(onStartGame: () -> Unit, navigateUp: () -> Unit) {
     val scrollState = rememberScrollState()
     var startButtonScale by remember { mutableFloatStateOf(1f) }
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     Scaffold(topBar = {
         TopAppBar(title = {
             Text(
@@ -68,9 +71,12 @@ fun InstructionsScreen(onStartGame: () -> Unit,navigateUp:()->Unit) {
             )
         }, navigationIcon = {
             IconButton(onClick = navigateUp) {
-                Icon(imageVector = Icons.AutoMirrored.Default.ArrowBack, contentDescription = "Navigate Up")
+                Icon(
+                    imageVector = Icons.AutoMirrored.Default.ArrowBack,
+                    contentDescription = "Navigate Up"
+                )
             }
-        })
+        }, scrollBehavior = scrollBehavior)
     }) { paddingValues ->
 
         Surface(
@@ -86,7 +92,6 @@ fun InstructionsScreen(onStartGame: () -> Unit,navigateUp:()->Unit) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .verticalScroll(scrollState)
                         .padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
@@ -106,42 +111,49 @@ fun InstructionsScreen(onStartGame: () -> Unit,navigateUp:()->Unit) {
                         color = Color(0xFF4CAF50),
                         modifier = Modifier.padding(bottom = 24.dp)
                     )
-
-                    InstructionCard(
-                        title = "How to Play",
-                        items = listOf(
-                            "Solve multiplication problems",
-                            "Answer before time runs out",
-                            "Earn points for correct answers",
-                            "Lose lives for mistakes",
-                            "Beat your high score!"
-                        )
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    InstructionCard(
-                        title = "Cool Features",
-                        items = listOf(
-                            "Fun math challenges",
-                            "Colorful graphics",
-                            "Exciting sound effects",
-                            "Track your progress",
-                            "Compete with friends"
-                        )
-                    )
-
-//            Spacer(modifier = Modifier.height(32.dp))
-
-                    Button(
-                        onClick = onStartGame,
+                    Column(
                         modifier = Modifier
-                            .scale(startButtonScale)
-                            .animateContentSize(),
-                        shape = MaterialTheme.shapes.medium
+                            .verticalScroll(scrollState)
+                            .nestedScroll(scrollBehavior.nestedScrollConnection)
                     ) {
-                        Text("Start Your Adventure!", fontSize = 18.sp)
+                        InstructionCard(
+                            title = "How to Play",
+                            items = listOf(
+                                "Solve multiplication problems",
+                                "Answer before time runs out",
+                                "Earn points for correct answers",
+                                "Lose lives for mistakes",
+                                "Beat your high score!"
+                            )
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                        InstructionCard(
+                            title = "Cool Features",
+                            items = listOf(
+                                "Fun math challenges",
+                                "Colorful graphics",
+                                "Exciting sound effects",
+                                "Track your progress",
+                                "Compete with friends"
+                            )
+                        )
+//            Spacer(modifier = Modifier.height(32.dp))
+                        Button(
+                            onClick = onStartGame,
+                            modifier = Modifier
+                                .scale(startButtonScale)
+                                .animateContentSize(),
+                            shape = MaterialTheme.shapes.medium
+                        ) {
+                            Text("Start Your Adventure!", fontSize = 18.sp)
+                        }
                     }
+
+
+
+
+
 
                     LaunchedEffect(Unit) {
                         while (true) {
