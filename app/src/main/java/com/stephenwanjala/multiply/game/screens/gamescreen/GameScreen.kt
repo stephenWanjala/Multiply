@@ -1,6 +1,7 @@
 package com.stephenwanjala.multiply.game.screens.gamescreen
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -14,6 +15,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -24,12 +27,18 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -56,6 +65,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFontFamilyResolver
@@ -67,6 +78,8 @@ import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.PreviewScreenSizes
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -75,6 +88,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.stephenwanjala.multiply.R
 import com.stephenwanjala.multiply.game.components.ConfettiAnimation
 import com.stephenwanjala.multiply.game.components.FloatingSymbols
+import com.stephenwanjala.multiply.ui.theme.MultiplyTheme
 import kotlinx.coroutines.delay
 
 
@@ -85,7 +99,9 @@ fun GameScreen(
     modifier: Modifier = Modifier,
     onNavigateUp: () -> Unit,
     toSettings: () -> Unit,
-    toHowToPlay: () -> Unit
+    toHowToPlay: () -> Unit,
+    onExit:()->Unit,
+    ontoHome: () -> Unit
 ) {
     val screenSize = currentWindowSize()
     val state = viewModel.state.collectAsStateWithLifecycle().value
@@ -171,7 +187,7 @@ fun GameScreen(
 
                 // Show game over dialog when needed
                 AnimatedVisibility(visible = viewModel.showGameOverDialog) {
-                    GameOverDialog(state = state, startGame = { viewModel.startGame() })
+                    GameOverDialog(state = state, startGame = { viewModel.startGame() }, ontoHome = ontoHome, onExit =onExit )
                 }
             }
 
@@ -182,41 +198,37 @@ fun GameScreen(
 
 
 @Composable
-fun GameOverDialog(state: GameState, startGame: () -> Unit) {
-    Dialog(onDismissRequest = { /* Dialog cannot be dismissed */ }) {
+fun GameOverDialog(state: GameState, startGame: () -> Unit,onExit:()->Unit,ontoHome:()->Unit) {
+    Dialog(
+        onDismissRequest = { /* Dialog cannot be dismissed */ }
+    ) {
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1f)
+                .wrapContentSize()
                 .clip(RoundedCornerShape(16.dp))
                 .background(
                     brush = Brush.linearGradient(
                         colors = listOf(MaterialTheme.colorScheme.background, Color(0xFF87CEEB)),
                     )
                 )
+                .padding(16.dp)
         ) {
-            // Confetti
-            AnimatedVisibility(state.score > 0) {
-                ConfettiAnimation()
-
-            }
-
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .wrapContentSize()
                     .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceBetween
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
                     text = "Game Over!",
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(top = 16.dp)
+                    textAlign = TextAlign.Center
                 )
 
+                // Score & Mascot
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -230,20 +242,48 @@ fun GameOverDialog(state: GameState, startGame: () -> Unit) {
                         style = MaterialTheme.typography.titleMedium,
                         color = Color.White
                     )
+                    Image(
+                        painter = painterResource(id = R.drawable.happy_mascot),
+                        contentDescription = "Happy Mascot",
+                        modifier = Modifier.size(100.dp)
+                    )
                 }
 
-                // Mascot image
-                Image(
-                    painter = painterResource(id = R.drawable.happy_mascot),
-                    contentDescription = "Happy Mascot",
-                    modifier = Modifier.size(100.dp)
-                )
+                // Buttons Layout
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally)
+                ) {
+                    PulsatingPlayAgainButton(
+                        onClick = onExit,
+                        text = "Exit",
+                        icon = Icons.Default.Close,
+                        modifier = Modifier.fillMaxWidth(1f)
+                            .weight(1f)
+                    )
+                    PulsatingPlayAgainButton(
+                        onClick = ontoHome,
+                        text = "Home",
+                        icon = Icons.Default.Home,
+                        modifier = Modifier.fillMaxWidth(1f)
+                            .weight(1f)
+                    )
+                }
 
-                PulsatingPlayAgainButton(onClick = startGame)
+                PulsatingPlayAgainButton(
+                    onClick = startGame,
+                    text = "Play Again!",
+                    icon = Icons.Default.Refresh,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                )
             }
         }
     }
 }
+
+
 
 @Composable
 fun AnimatedScoreText(score: Int) {
@@ -290,7 +330,12 @@ fun NewHighScoreText() {
 }
 
 @Composable
-fun PulsatingPlayAgainButton(onClick: () -> Unit) {
+fun PulsatingPlayAgainButton(
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+    icon: ImageVector? = null,
+    text: String
+) {
     val infiniteTransition = rememberInfiniteTransition()
     val scale by infiniteTransition.animateFloat(
         initialValue = 1f,
@@ -303,15 +348,23 @@ fun PulsatingPlayAgainButton(onClick: () -> Unit) {
 
     Button(
         onClick = onClick,
-        modifier = Modifier
-            .scale(scale)
-            .height(60.dp)
-            .fillMaxWidth(0.7f),
+        modifier = modifier
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            },
         shape = MaterialTheme.shapes.medium,
         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF32CD32))
     ) {
+        if (icon != null) {
+            Icon(
+                imageVector = icon,
+                contentDescription = text,
+                modifier = Modifier.size(40.dp)
+            )
+        }
         Text(
-            text = "Play Again!",
+            text = text,
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             color = Color.White
@@ -511,5 +564,13 @@ fun MathBubble(state: GameState) {
                 )
             }
         }
+    }
+}
+
+@PreviewScreenSizes
+@Composable
+private fun GameOverDialogPreview() {
+    MultiplyTheme {
+        GameOverDialog(state = GameState(), onExit = {}, ontoHome = {}, startGame = {})
     }
 }

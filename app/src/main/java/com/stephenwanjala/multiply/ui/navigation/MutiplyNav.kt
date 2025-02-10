@@ -1,15 +1,16 @@
 package com.stephenwanjala.multiply.ui.navigation
 
+import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.stephenwanjala.multiply.game.screens.gamescreen.GameScreen
 import com.stephenwanjala.multiply.game.screens.InstructionsScreen
 import com.stephenwanjala.multiply.game.screens.SettingsScreen
 import com.stephenwanjala.multiply.game.screens.WelcomeScreen
+import com.stephenwanjala.multiply.game.screens.gamescreen.GameScreen
 import kotlinx.serialization.Serializable
 
 @Composable
@@ -17,6 +18,7 @@ fun MultiplyNav(
     navHostController: NavHostController,
     modifier: Modifier = Modifier
 ) {
+    val activity = LocalActivity.current
     NavHost(
         navController = navHostController,
         startDestination = MultiplyDestination.WelComeDestination,
@@ -50,9 +52,23 @@ fun MultiplyNav(
         }
 
         composable<MultiplyDestination.GameDestination> {
-            GameScreen(viewModel = hiltViewModel(), onNavigateUp = navHostController::navigateUp, toSettings = {
-                navHostController.navigate(MultiplyDestination.SettingsDestination)
-            }, toHowToPlay ={navHostController.navigate(MultiplyDestination.GameInstructionDestination)})
+            GameScreen(viewModel = hiltViewModel(),
+                onNavigateUp = navHostController::navigateUp,
+                toSettings = {
+                    navHostController.navigate(MultiplyDestination.SettingsDestination)
+                },
+                toHowToPlay = { navHostController.navigate(MultiplyDestination.GameInstructionDestination) },
+                onExit = {
+                    activity?.finish()
+                },
+                ontoHome = {
+                    navHostController.navigate(MultiplyDestination.WelComeDestination) {
+                        popUpTo<MultiplyDestination.WelComeDestination> {
+                            inclusive = true
+                        }
+                    }
+                }
+            )
         }
     }
 
