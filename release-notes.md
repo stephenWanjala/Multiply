@@ -1,10 +1,8 @@
-# Release v1.0.0
+# Release v1.0.0 -alpha
 
 ### Features:
-- Added Welcome Screen 
-- Game Instructions Screen
-- App Icons
-- Improved UI design
-- Performance optimizations (Animations Performed In graphics Layer)
+- GameOver Dialog Animations to Use Graphics layer
+- Add Options To Exit,Go to Home Or Play Again Fixes #3
 
 ### Bug Fixes:
+ - GameOver Dialog Buttons Not showing

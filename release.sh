@@ -24,7 +24,7 @@ KEY_PASSWORD=$(grep 'keyPassword' "$PROPERTIES_FILE" | cut -d'=' -f2 | tr -d '[:
 APK_PATH="app/build/outputs/apk/release/app-release-unsigned.apk"
 SIGNED_APK="app/build/outputs/apk/release/app-release-signed.apk"
 FINAL_APK="app/build/outputs/apk/release/Multipy.apk"
-TAG_NAME="v1.0.0"
+TAG_NAME="v1.0.0-alpha"
 
 # Build unsigned release APK
 ./gradlew assembleRelease
