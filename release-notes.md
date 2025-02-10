@@ -1,8 +1,7 @@
-# Release v1.0.0 -alpha
+# Release v1.0.1 -alpha
 
 ### Features:
-- GameOver Dialog Animations to Use Graphics layer
-- Add Options To Exit,Go to Home Or Play Again Fixes #3
+- Improve Options To Exit,Go to Home Or Play Again Fixes 
 
 ### Bug Fixes:
- - GameOver Dialog Buttons Not showing
+ - Confetti Not Showing Or Making Dialog Span Whole Width Fixes #4
