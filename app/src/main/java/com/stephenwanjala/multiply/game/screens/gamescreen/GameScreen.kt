@@ -1,7 +1,6 @@
 package com.stephenwanjala.multiply.game.screens.gamescreen
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -15,11 +14,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,15 +24,13 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
@@ -79,15 +73,14 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.stephenwanjala.multiply.R
-import com.stephenwanjala.multiply.game.components.ConfettiAnimation
 import com.stephenwanjala.multiply.game.components.FloatingSymbols
+import com.stephenwanjala.multiply.game.components.confettiEffect
 import com.stephenwanjala.multiply.ui.theme.MultiplyTheme
 import kotlinx.coroutines.delay
 
@@ -100,7 +93,6 @@ fun GameScreen(
     onNavigateUp: () -> Unit,
     toSettings: () -> Unit,
     toHowToPlay: () -> Unit,
-    onExit:()->Unit,
     ontoHome: () -> Unit
 ) {
     val screenSize = currentWindowSize()
@@ -187,7 +179,12 @@ fun GameScreen(
 
                 // Show game over dialog when needed
                 AnimatedVisibility(visible = viewModel.showGameOverDialog) {
-                    GameOverDialog(state = state, startGame = { viewModel.startGame() }, ontoHome = ontoHome, onExit =onExit )
+                    GameOverDialog(
+                        state = state,
+                        startGame = { viewModel.startGame() },
+                        ontoHome = ontoHome,
+                        toSettings = toSettings
+                    )
                 }
             }
 
@@ -198,7 +195,12 @@ fun GameScreen(
 
 
 @Composable
-fun GameOverDialog(state: GameState, startGame: () -> Unit,onExit:()->Unit,ontoHome:()->Unit) {
+fun GameOverDialog(
+    state: GameState,
+    startGame: () -> Unit,
+    toSettings: () -> Unit,
+    ontoHome: () -> Unit
+) {
     Dialog(
         onDismissRequest = { /* Dialog cannot be dismissed */ }
     ) {
@@ -212,6 +214,7 @@ fun GameOverDialog(state: GameState, startGame: () -> Unit,onExit:()->Unit,ontoH
                     )
                 )
                 .padding(16.dp)
+                .then(if (state.score > 0) Modifier.confettiEffect() else Modifier)
         ) {
             Column(
                 modifier = Modifier
@@ -234,7 +237,7 @@ fun GameOverDialog(state: GameState, startGame: () -> Unit,onExit:()->Unit,ontoH
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     AnimatedScoreText(score = state.score)
-                    if (state.score >= state.highScore) {
+                    if (state.score >= state.highScore && state.score != 0 && state.highScore != 0) {
                         NewHighScoreText()
                     }
                     Text(
@@ -249,28 +252,23 @@ fun GameOverDialog(state: GameState, startGame: () -> Unit,onExit:()->Unit,ontoH
                     )
                 }
 
-                // Buttons Layout
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally)
+                    horizontalArrangement =Arrangement.Center
                 ) {
-                    PulsatingPlayAgainButton(
-                        onClick = onExit,
-                        text = "Exit",
-                        icon = Icons.Default.Close,
-                        modifier = Modifier.fillMaxWidth(1f)
-                            .weight(1f)
+                    PulsatingButton(
+                        onClick = toSettings,
+                        text = "Settings",
                     )
-                    PulsatingPlayAgainButton(
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    PulsatingButton(
                         onClick = ontoHome,
-                        text = "Home",
-                        icon = Icons.Default.Home,
-                        modifier = Modifier.fillMaxWidth(1f)
-                            .weight(1f)
+                        text = "Quit",
                     )
                 }
 
-                PulsatingPlayAgainButton(
+                PulsatingButton(
                     onClick = startGame,
                     text = "Play Again!",
                     icon = Icons.Default.Refresh,
@@ -282,7 +280,6 @@ fun GameOverDialog(state: GameState, startGame: () -> Unit,onExit:()->Unit,ontoH
         }
     }
 }
-
 
 
 @Composable
@@ -330,7 +327,7 @@ fun NewHighScoreText() {
 }
 
 @Composable
-fun PulsatingPlayAgainButton(
+fun PulsatingButton(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
     icon: ImageVector? = null,
@@ -356,21 +353,27 @@ fun PulsatingPlayAgainButton(
         shape = MaterialTheme.shapes.medium,
         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF32CD32))
     ) {
-        if (icon != null) {
-            Icon(
-                imageVector = icon,
-                contentDescription = text,
-                modifier = Modifier.size(40.dp)
+        Row(
+            modifier = Modifier.wrapContentWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = text,
+                )
+            }
+            Text(
+                text = text,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
             )
         }
-        Text(
-            text = text,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = Color.White
-        )
     }
 }
+
 
 
 @Composable
@@ -571,6 +574,6 @@ fun MathBubble(state: GameState) {
 @Composable
 private fun GameOverDialogPreview() {
     MultiplyTheme {
-        GameOverDialog(state = GameState(), onExit = {}, ontoHome = {}, startGame = {})
+        GameOverDialog(state = GameState(), toSettings = {}, ontoHome = {}, startGame = {})
     }
 }

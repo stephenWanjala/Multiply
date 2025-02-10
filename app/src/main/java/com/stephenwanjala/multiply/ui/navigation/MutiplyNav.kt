@@ -18,7 +18,6 @@ fun MultiplyNav(
     navHostController: NavHostController,
     modifier: Modifier = Modifier
 ) {
-    val activity = LocalActivity.current
     NavHost(
         navController = navHostController,
         startDestination = MultiplyDestination.WelComeDestination,
@@ -58,9 +57,6 @@ fun MultiplyNav(
                     navHostController.navigate(MultiplyDestination.SettingsDestination)
                 },
                 toHowToPlay = { navHostController.navigate(MultiplyDestination.GameInstructionDestination) },
-                onExit = {
-                    activity?.finish()
-                },
                 ontoHome = {
                     navHostController.navigate(MultiplyDestination.WelComeDestination) {
                         popUpTo<MultiplyDestination.WelComeDestination> {
