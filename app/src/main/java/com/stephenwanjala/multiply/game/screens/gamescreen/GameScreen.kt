@@ -2,18 +2,24 @@ package com.stephenwanjala.multiply.game.screens.gamescreen
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.InfiniteTransition
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowColumn
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -31,7 +37,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
@@ -49,22 +58,29 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFontFamilyResolver
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
@@ -72,8 +88,10 @@ import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -118,6 +136,14 @@ fun GameScreen(
                     )
                 }
             }, actions = {
+                if (state.gameActive) {
+                    IconButton(onClick = {
+                        if (state.isPaused) viewModel.resumeGame()
+                        else viewModel.pauseGame()
+                    }) {
+                        PulsatingPauseIcon(isPaused = state.isPaused)
+                    }
+                }
                 IconButton(onClick = toSettings) {
                     Icon(imageVector = Icons.Default.Settings, contentDescription = "Settings")
                 }
@@ -145,6 +171,7 @@ fun GameScreen(
                 modifier = modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
+
                 if (!state.gameActive) {
                     AnimatedStartButton(viewModel)
                 } else {
@@ -169,6 +196,28 @@ fun GameScreen(
                             if ((state.currentProblem?.position ?: 0f) <= state.safeAreaHeight) {
                                 MathBubble(state = state)
                             }
+                            androidx.compose.animation.AnimatedVisibility(visible = state.isPaused) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+                                        .clickable { viewModel.resumeGame() },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    // Floating island background
+                                    FloatingIslandPauseMenu(
+                                        onResume = { viewModel.resumeGame() },
+                                        onRestart = { viewModel.reStartGame() },
+                                        onQuit = ontoHome
+                                    )
+
+                                    // Animated sleeping zzz's
+                                    ZzzAnimation()
+
+                                    // Floating clouds
+                                    ParallaxClouds()
+                                }
+                            }
                         }
 
                         AnswerButtons(state = state, submitAnswer = {
@@ -178,7 +227,10 @@ fun GameScreen(
                 }
 
                 // Show game over dialog when needed
-                AnimatedVisibility(visible = viewModel.showGameOverDialog) {
+                AnimatedVisibility(visible = viewModel.showGameOverDialog,
+                    enter = fadeIn(),
+                    exit = fadeOut(animationSpec = tween(durationMillis = 0))
+                    ) {
                     GameOverDialog(
                         state = state,
                         startGame = { viewModel.startGame() },
@@ -191,6 +243,25 @@ fun GameScreen(
         }
     }
 
+}
+
+@Composable
+fun PulsatingPauseIcon(isPaused: Boolean) {
+    val infiniteTransition = rememberInfiniteTransition()
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0.7f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
+
+    Icon(
+        imageVector = if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
+        contentDescription = if (isPaused) "Resume" else "Pause",
+        tint = MaterialTheme.colorScheme.primary.copy(alpha = if (isPaused) alpha else 1f)
+    )
 }
 
 
@@ -254,7 +325,7 @@ fun GameOverDialog(
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement =Arrangement.Center
+                    horizontalArrangement = Arrangement.Center
                 ) {
                     PulsatingButton(
                         onClick = toSettings,
@@ -375,7 +446,6 @@ fun PulsatingButton(
 }
 
 
-
 @Composable
 fun AnimatedGameHeader(state: GameState) {
     Row(
@@ -445,6 +515,7 @@ private fun AnswerButtons(state: GameState, submitAnswer: (choice: Int) -> Unit)
                         modifier = Modifier
                             .weight(1f)
                             .height(56.dp),
+                        enabled = !state.isPaused,
                         shape = MaterialTheme.shapes.medium
                     ) {
                         Text(
@@ -570,10 +641,255 @@ fun MathBubble(state: GameState) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun FloatingIslandPauseMenu(
+    onResume: () -> Unit,
+    onRestart: () -> Unit,
+    onQuit: () -> Unit
+) {
+    val infiniteTransition = rememberInfiniteTransition()
+    val floatOffset by infiniteTransition.animateFloat(
+        initialValue = -10f,
+        targetValue = 10f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
+    val imageBitmap = ImageBitmap.imageResource(R.drawable.sleeping_mascot)
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .graphicsLayer {
+                rotationZ = floatOffset * 0.2f
+                translationY=floatOffset
+            }
+            .drawBehind {
+//                Island
+                drawPath(
+                    path = Path().apply {
+                        moveTo(0f, size.height)
+                        quadraticTo(size.width / 2, size.height - 150f, size.width, size.height)
+                    },
+                    color = Color(0xFF4CAF50)
+                )
+
+                // Draw sleeping mascot
+                drawImage(
+                    image = imageBitmap,
+                    dstSize = IntSize(150, 150),
+                    dstOffset = IntOffset(size.width.toInt() / 2 - 75, 50)
+                )
+            },
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Spacer(Modifier.weight(1f))
+        // Pause menu buttons
+        FlowColumn  (
+            modifier = Modifier
+                    .wrapContentSize(),
+//                .background(Color.Blue.copy(alpha = 0.2f)), // For Debugging TF😂😂😒 background color
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            HoverButton(
+                text = "Keep Playing",
+                icon = Icons.Default.PlayArrow,
+                onClick = onResume
+            )
+
+            HoverButton(
+                text = "Start Fresh",
+                icon = Icons.Default.Refresh,
+                onClick = onRestart
+            )
+
+            HoverButton(
+                text = "Quit to Home",
+                icon = Icons.Default.Home,
+                onClick = onQuit
+            )
+        }
+        Spacer(Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun ZzzAnimation() {
+    val symbols = listOf("💤", "😴", "✨", "⏸️")
+    val infiniteTransition = rememberInfiniteTransition()
+
+    repeat(8) { index ->
+        val xOffset by infiniteTransition.animateFloat(
+            initialValue = -50f,
+            targetValue = 50f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(3000 + index * 500, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse
+            )
+        )
+
+        val yOffset by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = -100f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(2500 + index * 500, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            )
+        )
+
+        val alpha by infiniteTransition.animateFloat(
+            initialValue = 0.8f,
+            targetValue = 0f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(3000, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            )
+        )
+
+        Text(
+            text = symbols[index % symbols.size],
+            modifier = Modifier
+//                .offset(xOffset.dp, yOffset.dp)
+                .graphicsLayer {
+                    translationX = xOffset
+                    translationY = yOffset
+                    this.alpha = this.translationX
+                },
+            fontSize = 24.sp,
+            color = Color.White.copy(alpha = alpha)
+        )
+    }
+}
+
+@Composable
+private fun ParallaxClouds() {
+    val infiniteTransition = rememberInfiniteTransition()
+
+    // Back layer clouds
+    CloudLayer(
+        speedMultiplier = 0.5f,
+        scale = 0.8f,
+        alpha = 0.4f,
+        infiniteTransition = infiniteTransition
+    )
+
+    // Front layer clouds
+    CloudLayer(
+        speedMultiplier = 1.2f,
+        scale = 1f,
+        alpha = 0.7f,
+        infiniteTransition = infiniteTransition
+    )
+}
+
+@Composable
+private fun CloudLayer(
+    speedMultiplier: Float,
+    scale: Float,
+    alpha: Float,
+    infiniteTransition: InfiniteTransition
+) {
+    repeat(5) { index ->
+        val xOffset by infiniteTransition.animateFloat(
+            initialValue = -200f,
+            targetValue = 200f,
+            animationSpec = infiniteRepeatable(
+                animation = tween((3000 / speedMultiplier).toInt(), easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse
+            )
+        )
+
+        Image(
+            painter = painterResource(R.drawable.ic_cloud),
+            contentDescription = null,
+            modifier = Modifier
+                .scale(scale)
+                .graphicsLayer {
+                    this.alpha = alpha
+                    translationX = xOffset * (index + 1)
+                }
+                .offset(y = (index * 50).dp)
+        )
+    }
+}
+
+@Composable
+fun HoverButton(
+    text: String,
+    icon: ImageVector,
+    onClick: () -> Unit
+) {
+    var isHovered by remember { mutableStateOf(false) }
+    val infiniteTransition = rememberInfiniteTransition()
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 0.98f,
+        targetValue = 1.02f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
+
+    Button(
+        onClick = onClick,
+        modifier = Modifier
+            .graphicsLayer {
+                scaleX = if (isHovered) 1.1f else scale
+                scaleY = if (isHovered) 1.1f else scale
+            }
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent()
+
+                        when (event.type) {
+                            PointerEventType.Enter -> {
+                                isHovered = true
+                            }
+
+                            PointerEventType.Exit -> {
+                                isHovered = false
+                            }
+                        }
+                    }
+                }
+            },
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color(0xFFFFD700),
+            contentColor = Color.Black
+        ),
+        elevation = ButtonDefaults.buttonElevation(
+            defaultElevation = 4.dp,
+            pressedElevation = 8.dp
+        )
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = icon,
+                contentDescription = text,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(text = text, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
 @PreviewScreenSizes
 @Composable
 private fun GameOverDialogPreview() {
     MultiplyTheme {
         GameOverDialog(state = GameState(), toSettings = {}, ontoHome = {}, startGame = {})
+    }
+}
+
+
+@PreviewScreenSizes
+@Composable
+private fun PreviewFloatingIslandPauseMenu() {
+    MultiplyTheme {
+        FloatingIslandPauseMenu(onQuit = {}, onResume = {}, onRestart = {})
     }
 }

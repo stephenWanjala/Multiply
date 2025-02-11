@@ -65,17 +65,21 @@ class GameViewModel @Inject constructor(
                 score = 0,
                 lives = 3,
                 problemCounter = 0,
-                currentProblem = null
+                currentProblem = null,
+                isPaused = false,
+                pauseStartTime = 0L
             )
         }
 
         gameJob = viewModelScope.launch {
             while (_state.value.gameActive) {
-                if (_state.value.currentProblem == null) {
-                    generateNewProblem()
+                if (!_state.value.isPaused) {
+                    if (_state.value.currentProblem == null) {
+                        generateNewProblem()
+                    }
+                    updateProblemPosition()
                 }
                 delay(16)
-                updateProblemPosition()
             }
         }
     }
@@ -151,7 +155,13 @@ class GameViewModel @Inject constructor(
     }
 
     private fun endGame() {
-        _state.update { it.copy(gameActive = false) }
+        _state.update {
+            it.copy(
+                gameActive = false,
+                isPaused = false,
+                pauseStartTime = 0L
+            )
+        }
         gameJob?.cancel()
         showGameOverDialog = true
         viewModelScope.launch {
@@ -160,6 +170,7 @@ class GameViewModel @Inject constructor(
     }
 
     fun submitAnswer(selectedAnswer: Int) {
+        if (!_state.value.gameActive || _state.value.isPaused) return
         _state.value.currentProblem?.let { problem ->
             if (selectedAnswer == problem.answer) {
                 _state.update {
@@ -191,10 +202,61 @@ class GameViewModel @Inject constructor(
         }
     }
 
+    fun pauseGame() {
+        if (!_state.value.gameActive || _state.value.isPaused) return
+        _state.update {
+            it.copy(
+                isPaused = true,
+                pauseStartTime = System.currentTimeMillis()
+            )
+        }
+    }
+
+    fun resumeGame() {
+        if (!_state.value.gameActive || !_state.value.isPaused) return
+        val pauseDuration = System.currentTimeMillis() - _state.value.pauseStartTime
+        _state.update { state ->
+            val updatedProblem = state.currentProblem?.let { problem ->
+                problem.copy(startTime = problem.startTime + pauseDuration)
+            }
+            state.copy(
+                isPaused = false,
+                pauseStartTime = 0L,
+                currentProblem = updatedProblem
+            )
+        }
+    }
+    /*
+    Ensure any running game loop is stopped
+     Stop current game
+     Reset game speed
+     Start a new game with fresh parameters
+     */
+
+    fun reStartGame() {
+        gameJob?.cancel()
+
+        _state.update {
+            it.copy(
+                gameActive = false,
+                score = 0,
+                lives = 3,
+                problemCounter = 0,
+                currentProblem = null,
+                gameSpeed = 0.15f,
+                isPaused = false,
+                pauseStartTime = 0L
+            )
+        }
+        startGame()
+    }
+
+
     companion object {
         private val HIGH_SCORE_KEY = intPreferencesKey("high_score")
     }
 }
+
 
 data class GameState(
     val currentProblem: Problem? = null,
@@ -206,7 +268,9 @@ data class GameState(
     val safeAreaHeight: Float = 80f,
     val problemCounter: Int = 0,
     val highScore: Int = 0,
-    val gameSpeed: Float = 0f
+    val gameSpeed: Float = 0f,
+    val isPaused: Boolean = false,
+    val pauseStartTime: Long = 0L
 )
 
 data class Problem(
