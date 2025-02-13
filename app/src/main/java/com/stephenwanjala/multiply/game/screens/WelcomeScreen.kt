@@ -8,6 +8,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowColumn
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -32,12 +34,14 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.stephenwanjala.multiply.R
-import com.stephenwanjala.multiply.game.components.AnimatedBackground
+import com.stephenwanjala.multiply.game.components.animatedBackground
 import com.stephenwanjala.multiply.ui.theme.MultiplyTheme
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun WelcomeScreen(
     onPlayClick: () -> Unit,
@@ -52,18 +56,17 @@ fun WelcomeScreen(
                     colors = listOf(
                         Color(0xFF4CAF50),
                         MaterialTheme.colorScheme.background,
-                        Color(0xFF81D4FA)  
+                        Color(0xFF81D4FA)
                     ),
                 )
             )
-    )  {
-
-        AnimatedBackground()
-
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        FlowColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .animatedBackground(),
+            verticalArrangement = Arrangement.SpaceEvenly,
+            horizontalArrangement = Arrangement.Absolute.Center
         ) {
             // Animated logo
             AnimatedLogo()
@@ -169,6 +172,7 @@ fun PulsatingButton(onClick: () -> Unit, text: String, color: Color) {
 
 
 @PreviewLightDark
+@PreviewScreenSizes
 @Composable
 private fun PreviewWelcomeScreen() {
     MultiplyTheme {
