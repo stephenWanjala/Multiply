@@ -88,7 +88,6 @@ import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -122,7 +121,7 @@ fun GameScreen(
     Scaffold(topBar = {
         CenterAlignedTopAppBar(title = {
             Text(
-                text = stringResource(R.string.app_name),
+                text = "${stringResource(R.string.app_name)} ~ ${state.selectedDifficulty.name}",
                 style = MaterialTheme.typography.headlineMedium,
                 textAlign = TextAlign.Center,
                 fontWeight = FontWeight.Bold
@@ -227,10 +226,11 @@ fun GameScreen(
                 }
 
                 // Show game over dialog when needed
-                AnimatedVisibility(visible = viewModel.showGameOverDialog,
+                AnimatedVisibility(
+                    visible = viewModel.showGameOverDialog,
                     enter = fadeIn(),
                     exit = fadeOut(animationSpec = tween(durationMillis = 0))
-                    ) {
+                ) {
                     GameOverDialog(
                         state = state,
                         startGame = { viewModel.startGame() },
@@ -311,6 +311,11 @@ fun GameOverDialog(
                     if (state.score >= state.highScore && state.score != 0 && state.highScore != 0) {
                         NewHighScoreText()
                     }
+                    Text(
+                        text = "Game Level :${state.selectedDifficulty.name}",
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                     Text(
                         text = "Previous Best: ${state.highScore}",
                         style = MaterialTheme.typography.titleMedium,
@@ -664,7 +669,7 @@ private fun FloatingIslandPauseMenu(
             .fillMaxSize()
             .graphicsLayer {
                 rotationZ = floatOffset * 0.2f
-                translationY=floatOffset
+                translationY = floatOffset
             }
             .drawBehind {
 //                Island
@@ -687,9 +692,9 @@ private fun FloatingIslandPauseMenu(
     ) {
         Spacer(Modifier.weight(1f))
         // Pause menu buttons
-        FlowColumn  (
+        FlowColumn(
             modifier = Modifier
-                    .wrapContentSize(),
+                .wrapContentSize(),
 //                .background(Color.Blue.copy(alpha = 0.2f)), // For Debugging TF😂😂😒 background color
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {

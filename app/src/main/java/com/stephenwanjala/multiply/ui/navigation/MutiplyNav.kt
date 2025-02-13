@@ -3,6 +3,7 @@ package com.stephenwanjala.multiply.ui.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -10,6 +11,7 @@ import com.stephenwanjala.multiply.game.screens.InstructionsScreen
 import com.stephenwanjala.multiply.game.screens.SettingsScreen
 import com.stephenwanjala.multiply.game.screens.WelcomeScreen
 import com.stephenwanjala.multiply.game.screens.gamescreen.GameScreen
+import com.stephenwanjala.multiply.game.screens.gamescreen.GameViewModel
 import kotlinx.serialization.Serializable
 
 @Composable
@@ -17,6 +19,8 @@ fun MultiplyNav(
     navHostController: NavHostController,
     modifier: Modifier = Modifier
 ) {
+    val viewModel = hiltViewModel<GameViewModel>()
+    val state =viewModel.state.collectAsStateWithLifecycle().value
     NavHost(
         navController = navHostController,
         startDestination = MultiplyDestination.WelComeDestination,
@@ -34,7 +38,9 @@ fun MultiplyNav(
         }
 
         composable<MultiplyDestination.SettingsDestination> {
-            SettingsScreen(onBackClick = navHostController::navigateUp)
+            SettingsScreen(onBackClick = navHostController::navigateUp,state=state,onAction={ action->
+                viewModel.onAction(action)
+            })
         }
         composable<MultiplyDestination.GameInstructionDestination> {
             InstructionsScreen(

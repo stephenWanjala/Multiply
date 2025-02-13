@@ -57,15 +57,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.stephenwanjala.multiply.game.screens.gamescreen.Difficulty
+import com.stephenwanjala.multiply.game.screens.gamescreen.GameAction
+import com.stephenwanjala.multiply.game.screens.gamescreen.GameState
 import com.stephenwanjala.multiply.ui.theme.MultiplyTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onBackClick: () -> Unit) {
+fun SettingsScreen(onBackClick: () -> Unit, state: GameState, onAction: (GameAction)->Unit) {
     var difficulty by remember { mutableIntStateOf(1) }
     var soundEnabled by remember { mutableStateOf(true) }
     var musicEnabled by remember { mutableStateOf(true) }
     var selectedTheme by remember { mutableStateOf("Space") }
+    val uiDiff = when(state.selectedDifficulty){
+        Difficulty.EASY -> 1
+        Difficulty.MEDIUM -> 2
+        Difficulty.HARD -> 3
+    }
 
     val scrollState = rememberScrollState()
     Scaffold(modifier = Modifier.fillMaxSize(),
@@ -108,8 +116,10 @@ fun SettingsScreen(onBackClick: () -> Unit) {
 
                 SettingsCategory(title = "Gameplay") {
                     DifficultySelector(
-                        difficulty = difficulty,
-                        onDifficultyChange = { difficulty = it }
+                        difficulty = uiDiff,
+                        onDifficultyChange = { difficulty = it
+                            onAction(GameAction.UpdateDifficulty(it.toDifficulty()))
+                        }
                     )
                 }
 
@@ -288,11 +298,24 @@ fun ThemeButton(theme: String, isSelected: Boolean, onSelect: () -> Unit) {
     }
 }
 
+fun Int.toDifficulty():Difficulty{
+    return when {
+        this==1 -> {
+            Difficulty.EASY
+        }
+        this==2 -> {
+            Difficulty.MEDIUM
+        }
+        else -> {
+            Difficulty.HARD
+        }
+    }
+}
 
 @PreviewLightDark
 @Composable
 private fun PreviewSettings() {
     MultiplyTheme {
-        SettingsScreen { }
+        SettingsScreen(onBackClick = {}, state = GameState(), onAction ={})
     }
 }

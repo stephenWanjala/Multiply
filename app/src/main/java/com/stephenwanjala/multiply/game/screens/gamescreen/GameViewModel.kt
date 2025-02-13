@@ -36,10 +36,33 @@ class GameViewModel @Inject constructor(
     var showGameOverDialog by mutableStateOf(false)
         private set
 
+    fun onAction(action: GameAction){
+        when(action){
+            GameAction.ResetGameSettings -> {
+
+            }
+            is GameAction.UpdateDifficulty -> {
+                setDifficulty(action.difficulty)
+            }
+        }
+    }
+
     init {
         viewModelScope.launch {
             dataStore.data.collect { preferences ->
-                _state.update { it.copy(highScore = preferences[HIGH_SCORE_KEY] ?: 0) }
+                val savedDifficulty = preferences[DIFFICULTY_KEY]?.let { Difficulty.entries[it] } ?: Difficulty.EASY
+                val score =preferences[HIGH_SCORE_KEY] ?: 0
+                _state.update { it.copy(selectedDifficulty = savedDifficulty, highScore = score) }
+
+            }
+        }
+    }
+
+    private fun setDifficulty(difficulty: Difficulty) {
+        _state.update { it.copy(selectedDifficulty = difficulty) }
+        viewModelScope.launch {
+            dataStore.edit { prefs ->
+                prefs[DIFFICULTY_KEY] = difficulty.ordinal
             }
         }
     }
@@ -58,6 +81,11 @@ class GameViewModel @Inject constructor(
 
         showGameOverDialog = false
         gameJob?.cancel()
+        val speed = when (_state.value.selectedDifficulty) {
+            Difficulty.EASY -> 0.15f
+            Difficulty.MEDIUM -> 0.2f
+            Difficulty.HARD -> 0.21f
+        }
 
         _state.update {
             it.copy(
@@ -67,7 +95,8 @@ class GameViewModel @Inject constructor(
                 problemCounter = 0,
                 currentProblem = null,
                 isPaused = false,
-                pauseStartTime = 0L
+                pauseStartTime = 0L,
+                gameSpeed = speed
             )
         }
 
@@ -85,8 +114,14 @@ class GameViewModel @Inject constructor(
     }
 
     private fun generateNewProblem() {
-        val num1 = Random.nextInt(1, 10)
-        val num2 = Random.nextInt(1, 10)
+        val difficulty = _state.value.selectedDifficulty
+        val (min, max) = when (difficulty) {
+            Difficulty.EASY -> Pair(1, 9)
+            Difficulty.MEDIUM -> Pair(1, 12)
+            Difficulty.HARD -> Pair(1, 15)
+        }
+        val num1 = Random.nextInt(min, max + 1)
+        val num2 = Random.nextInt(min, max + 1)
         val answer = num1 * num2
         val choices = generateChoices(answer)
 
@@ -107,22 +142,48 @@ class GameViewModel @Inject constructor(
     }
 
     private fun generateChoices(correctAnswer: Int): List<Int> {
+        val difficulty = _state.value.selectedDifficulty
         val choices = mutableSetOf(correctAnswer)
         while (choices.size < 4) {
-            val wrongAnswer = when (Random.nextInt(3)) {
-                0 -> correctAnswer + Random.nextInt(1, 4)
-                1 -> correctAnswer - Random.nextInt(1, 4)
-                else -> Random.nextInt(1, 101)
+            val wrongAnswer = when (difficulty) {
+                Difficulty.EASY -> generateEasyAnswer(correctAnswer)
+                Difficulty.MEDIUM -> generateMediumAnswer(correctAnswer)
+                Difficulty.HARD -> generateHardAnswer(correctAnswer)
             }
             if (wrongAnswer > 0) choices.add(wrongAnswer)
         }
-        return choices.toList().shuffled()
+        return choices.shuffled()
+    }
+
+    private fun generateEasyAnswer(correct: Int): Int {
+        return when (Random.nextInt(3)) {
+            0 -> correct + Random.nextInt(1, 5)
+            1 -> correct - Random.nextInt(1, 5)
+            else -> Random.nextInt(1, 101)
+        }
+    }
+
+    private fun generateMediumAnswer(correct: Int): Int {
+        return when (Random.nextInt(3)) {
+            0 -> correct + Random.nextInt(1, 4)
+            1 -> correct - Random.nextInt(1, 4)
+            else -> Random.nextInt(maxOf(1, correct - 5), correct + 6)
+        }
+    }
+
+    private fun generateHardAnswer(correct: Int): Int {
+        return when (Random.nextInt(3)) {
+            0 -> correct + 1
+            1 -> correct - 1
+            else -> (correct + listOf(-2, 2).random()).coerceAtLeast(1)
+        }
     }
 
     fun updateGameAreaHeight(height: Float) {
         _state.update {
             it.copy(
-                gameAreaHeight = height - 200,
+                screenHeight = height,
+                gameAreaHeight = height - 40,
                 safeAreaHeight = height * 0.8f - 300
             )
         }
@@ -197,7 +258,8 @@ class GameViewModel @Inject constructor(
         _state.update {
             it.copy(
                 screenHeight = height,
-                gameSpeed = 0.15f
+                gameAreaHeight = height - 200,
+                safeAreaHeight = height * 0.8f - 300
             )
         }
     }
@@ -243,7 +305,6 @@ class GameViewModel @Inject constructor(
                 lives = 3,
                 problemCounter = 0,
                 currentProblem = null,
-                gameSpeed = 0.15f,
                 isPaused = false,
                 pauseStartTime = 0L
             )
@@ -252,8 +313,11 @@ class GameViewModel @Inject constructor(
     }
 
 
+
+
     companion object {
         private val HIGH_SCORE_KEY = intPreferencesKey("high_score")
+        private val DIFFICULTY_KEY = intPreferencesKey("difficulty")
     }
 }
 
@@ -270,7 +334,8 @@ data class GameState(
     val highScore: Int = 0,
     val gameSpeed: Float = 0f,
     val isPaused: Boolean = false,
-    val pauseStartTime: Long = 0L
+    val pauseStartTime: Long = 0L,
+    val selectedDifficulty: Difficulty =Difficulty.EASY
 )
 
 data class Problem(
@@ -282,3 +347,13 @@ data class Problem(
     val startTime: Long,
     val position: Float = 0f
 )
+
+enum class Difficulty {
+    EASY, MEDIUM, HARD
+}
+
+
+sealed interface GameAction{
+    data object ResetGameSettings:GameAction
+    data class UpdateDifficulty(val difficulty: Difficulty):GameAction
+}
