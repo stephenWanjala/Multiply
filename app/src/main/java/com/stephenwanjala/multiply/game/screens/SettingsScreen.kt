@@ -20,12 +20,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Face
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Cake
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Park
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Water
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -64,12 +64,12 @@ import com.stephenwanjala.multiply.ui.theme.MultiplyTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onBackClick: () -> Unit, state: GameState, onAction: (GameAction)->Unit) {
+fun SettingsScreen(onBackClick: () -> Unit, state: GameState, onAction: (GameAction) -> Unit) {
     var difficulty by remember { mutableIntStateOf(1) }
     var soundEnabled by remember { mutableStateOf(true) }
     var musicEnabled by remember { mutableStateOf(true) }
     var selectedTheme by remember { mutableStateOf("Space") }
-    val uiDiff = when(state.selectedDifficulty){
+    val uiDiff = when (state.selectedDifficulty) {
         Difficulty.EASY -> 1
         Difficulty.MEDIUM -> 2
         Difficulty.HARD -> 3
@@ -117,7 +117,8 @@ fun SettingsScreen(onBackClick: () -> Unit, state: GameState, onAction: (GameAct
                 SettingsCategory(title = "Gameplay") {
                     DifficultySelector(
                         difficulty = uiDiff,
-                        onDifficultyChange = { difficulty = it
+                        onDifficultyChange = {
+                            difficulty = it
                             onAction(GameAction.UpdateDifficulty(it.toDifficulty()))
                         }
                     )
@@ -270,8 +271,7 @@ fun ThemeButton(theme: String, isSelected: Boolean, onSelect: () -> Unit) {
             .scale(scale)
     ) {
         IconButton(onClick = onSelect, modifier = Modifier.fillMaxSize()) {
-            /*
-             Icon(
+            Icon(
                 imageVector = when (theme) {
                     "Space" -> Icons.Default.Star
                     "Jungle" -> Icons.Default.Park
@@ -282,30 +282,20 @@ fun ThemeButton(theme: String, isSelected: Boolean, onSelect: () -> Unit) {
                 contentDescription = theme,
                 tint = Color.White
             )
-             */
-            Icon(
-                imageVector = when (theme) {
-                    "Space" -> Icons.Default.Star
-                    "Jungle" -> Icons.Default.Face
-                    "Ocean" -> Icons.Default.Warning
-                    "Candy" -> Icons.Default.Info
-                    else -> Icons.Default.PlayArrow
-                },
-                contentDescription = theme,
-                tint = Color.White
-            )
         }
     }
 }
 
-fun Int.toDifficulty():Difficulty{
+fun Int.toDifficulty(): Difficulty {
     return when {
-        this==1 -> {
+        this == 1 -> {
             Difficulty.EASY
         }
-        this==2 -> {
+
+        this == 2 -> {
             Difficulty.MEDIUM
         }
+
         else -> {
             Difficulty.HARD
         }
@@ -316,6 +306,6 @@ fun Int.toDifficulty():Difficulty{
 @Composable
 private fun PreviewSettings() {
     MultiplyTheme {
-        SettingsScreen(onBackClick = {}, state = GameState(), onAction ={})
+        SettingsScreen(onBackClick = {}, state = GameState(), onAction = {})
     }
 }

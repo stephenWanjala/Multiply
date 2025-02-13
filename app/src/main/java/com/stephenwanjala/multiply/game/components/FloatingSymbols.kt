@@ -46,13 +46,8 @@ fun FloatingSymbols() {
                 modifier = Modifier.graphicsLayer {
                     translationX = position.x
                     translationY = position.y
-//                    rotationX =rotation
-//                    rotationY=rotation
                     rotationZ = rotation
                 }
-//                modifier = Modifier
-//                    .offset { IntOffset(position.x.toInt(), position.y.toInt()) }
-//                    .rotate(rotation)
             )
 
             LaunchedEffect(Unit) {
