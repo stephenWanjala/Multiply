@@ -1,13 +1,17 @@
-# Release v1.0.1 -alpha
+# Release v1.0.2-alpha
 
 ### Features:
-- Improve Options To Exit,Go to Home Or Play Again Fixes 
-- Add Pause Game Buttons
-- Cool Island Transparent Animation For Pause Game
-- Restarting The Game
-- 
+>   Generate larger numbers in harder difficulties
 
-### Bug Fixes:
- - Confetti Not Showing Or Making Dialog Span Whole Width Fixes #4
- - Fix Game Play Starts immediately While Dialog Animates Away
- - 
+    Create trickier answer choices in higher difficulties
+
+    Increase falling speed with difficulty
+
+The difficulty affects:
+
+    Speed: Problems fall faster in harder modes
+
+    Numbers Range: Larger multiplication operands in harder modes
+
+    Answer Choices: Wrong answers are closer to the correct result in harder modes
+        
