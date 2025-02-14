@@ -34,7 +34,7 @@ an incorrect answer, they lose a life.
   Clone the repository:
 
 ```bash
-git https://github.com/stephenWanjala/Multiply.git
+git clone https://github.com/stephenWanjala/Multiply.git
 ```
 
 <p>Open the project in Android Studio.</p>
