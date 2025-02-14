@@ -72,7 +72,7 @@ fun MultiplyNav(
                 },
                 onSettingsClick = {
                     navHostController.navigate(MultiplyDestination.SettingsDestination)
-                })
+                }, onNavigateUp = navHostController::navigateUp)
         }
 
         composable<MultiplyDestination.SettingsDestination> {
