@@ -1,4 +1,4 @@
-package com.stephenwanjala.multiply.game.screens
+package com.stephenwanjala.multiply.game.feat_bubblemode
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
@@ -21,15 +21,11 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.window.core.layout.WindowWidthSizeClass
-import com.stephenwanjala.multiply.game.screens.gamescreen.Difficulty
-import com.stephenwanjala.multiply.game.screens.gamescreen.GameAction
-import com.stephenwanjala.multiply.game.screens.gamescreen.GameState
 import com.stephenwanjala.multiply.ui.theme.MultiplyTheme
 
 @OptIn(ExperimentalMaterial3Api::class)

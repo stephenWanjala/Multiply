@@ -1,4 +1,4 @@
-package com.stephenwanjala.multiply.game.screens.gamescreen
+package com.stephenwanjala.multiply.game.feat_bubblemode
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing

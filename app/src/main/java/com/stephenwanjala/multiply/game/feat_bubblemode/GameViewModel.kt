@@ -1,4 +1,4 @@
-package com.stephenwanjala.multiply.game.screens.gamescreen
+package com.stephenwanjala.multiply.game.feat_bubblemode
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -335,7 +335,7 @@ data class GameState(
     val gameSpeed: Float = 0f,
     val isPaused: Boolean = false,
     val pauseStartTime: Long = 0L,
-    val selectedDifficulty: Difficulty =Difficulty.EASY
+    val selectedDifficulty: Difficulty = Difficulty.EASY
 )
 
 data class Problem(
@@ -354,6 +354,6 @@ enum class Difficulty {
 
 
 sealed interface GameAction{
-    data object ResetGameSettings:GameAction
-    data class UpdateDifficulty(val difficulty: Difficulty):GameAction
+    data object ResetGameSettings: GameAction
+    data class UpdateDifficulty(val difficulty: Difficulty): GameAction
 }

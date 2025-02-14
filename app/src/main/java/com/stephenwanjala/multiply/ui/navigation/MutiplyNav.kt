@@ -9,14 +9,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.stephenwanjala.multiply.game.models.BubbleMathDifficulty
 import com.stephenwanjala.multiply.game.models.GameMode
-import com.stephenwanjala.multiply.game.screens.GameModeSelectionScreen
-import com.stephenwanjala.multiply.game.screens.InstructionsScreen
-import com.stephenwanjala.multiply.game.screens.SettingsScreen
-import com.stephenwanjala.multiply.game.screens.WelcomeScreen
-import com.stephenwanjala.multiply.game.screens.gamescreen.Difficulty
-import com.stephenwanjala.multiply.game.screens.gamescreen.GameAction
-import com.stephenwanjala.multiply.game.screens.gamescreen.GameScreen
-import com.stephenwanjala.multiply.game.screens.gamescreen.GameViewModel
+import com.stephenwanjala.multiply.game.GameModeSelectionScreen
+import com.stephenwanjala.multiply.game.feat_bubblemode.InstructionsScreen
+import com.stephenwanjala.multiply.game.feat_bubblemode.SettingsScreen
+import com.stephenwanjala.multiply.game.feat_bubblemode.WelcomeScreen
+import com.stephenwanjala.multiply.game.feat_bubblemode.Difficulty
+import com.stephenwanjala.multiply.game.feat_bubblemode.GameAction
+import com.stephenwanjala.multiply.game.feat_bubblemode.GameScreen
+import com.stephenwanjala.multiply.game.feat_bubblemode.GameViewModel
 import kotlinx.serialization.Serializable
 
 @Composable

@@ -22,7 +22,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.stephenwanjala.multiply.game.screens.gamescreen.GameViewModel
+import com.stephenwanjala.multiply.game.feat_bubblemode.GameViewModel
 
 @Composable
 fun StartButton(viewModel: GameViewModel) {

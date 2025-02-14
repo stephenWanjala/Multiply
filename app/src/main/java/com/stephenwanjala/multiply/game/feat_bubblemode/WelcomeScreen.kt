@@ -1,4 +1,4 @@
-package com.stephenwanjala.multiply.game.screens
+package com.stephenwanjala.multiply.game.feat_bubblemode
 
 import androidx.compose.animation.core.EaseInOutQuad
 import androidx.compose.animation.core.EaseOutBounce

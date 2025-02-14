@@ -1,4 +1,4 @@
-package com.stephenwanjala.multiply.game.screens
+package com.stephenwanjala.multiply.game
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
