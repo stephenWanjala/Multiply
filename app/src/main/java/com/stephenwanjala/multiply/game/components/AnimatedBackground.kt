@@ -46,7 +46,6 @@ fun AnimatedBackground() {
                         translationX = position.x
                         translationY = position.y
                     }
-//                    .offset { IntOffset(position.x.toInt(), position.y.toInt()) }
             )
 
             LaunchedEffect(Unit) {

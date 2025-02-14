@@ -7,8 +7,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.stephenwanjala.multiply.game.screens.BubbleMathDifficulty
-import com.stephenwanjala.multiply.game.screens.GameMode
+import com.stephenwanjala.multiply.game.models.BubbleMathDifficulty
+import com.stephenwanjala.multiply.game.models.GameMode
 import com.stephenwanjala.multiply.game.screens.GameModeSelectionScreen
 import com.stephenwanjala.multiply.game.screens.InstructionsScreen
 import com.stephenwanjala.multiply.game.screens.SettingsScreen

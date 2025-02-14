@@ -1,15 +1,22 @@
 package com.stephenwanjala.multiply.game.screens
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -17,57 +24,36 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.drawOutline
-import androidx.compose.ui.graphics.drawscope.Fill
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.stephenwanjala.multiply.R
 import com.stephenwanjala.multiply.game.components.animatedBackground
+import com.stephenwanjala.multiply.game.components.glowingOrbs
+import com.stephenwanjala.multiply.game.components.neumorphicShadow
+import com.stephenwanjala.multiply.game.components.repeatLiquidBackground
+import com.stephenwanjala.multiply.game.models.BubbleMathDifficulty
+import com.stephenwanjala.multiply.game.models.GameMode
+import com.stephenwanjala.multiply.game.models.QuizDifficulty
 import com.stephenwanjala.multiply.ui.theme.MultiplyTheme
-
-enum class BubbleMathDifficulty {
-    EASY,
-    MEDIUM,
-    HARD
-}
-
-enum class QuizDifficulty(val questionCount: Int, val numberRange: IntRange) {
-    BEGINNER(15, 1..20),
-    INTERMEDIATE(20, 5..50),
-    ADVANCED(25, 10..100),
-    EXPERT(30, 1..200)
-}
-
-sealed class GameMode {
-    data class BubbleMathBlitz(val difficulty: BubbleMathDifficulty) : GameMode()
-    data class QuizGenius(val difficulty: QuizDifficulty) : GameMode()
-}
 
 @Composable
 fun GameModeSelectionScreen(onConfirm: (GameMode) -> Unit) {
@@ -79,12 +65,17 @@ fun GameModeSelectionScreen(onConfirm: (GameMode) -> Unit) {
         "Quiz Genius" to QuizDifficulty.entries
     )
 
-    Box (
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(
                 brush = Brush.radialGradient(
-                    colors = listOf(Color(0xFF2A0A45),MaterialTheme.colorScheme.background,MaterialTheme.colorScheme.primary, Color(0xFF0A0420))
+                    colors = listOf(
+                        Color(0xFF2A0A45),
+                        MaterialTheme.colorScheme.background,
+                        MaterialTheme.colorScheme.primary,
+                        Color(0xFF0A0420)
+                    )
                 )
             )
             .repeatLiquidBackground()
@@ -463,124 +454,12 @@ fun NeuSectionTitle(text: String) {
     }
 }
 
-// Neumorphic Shadow Modifier
-fun Modifier.neumorphicShadow(
-    elevation: Dp,
-    shape: Shape = RoundedCornerShape(8.dp),
-    lightColor: Color = Color(0x55FFFFFF),
-    darkColor: Color = Color(0x55000000),
-    inverted: Boolean = false
-): Modifier = this.then(
-    Modifier.drawBehind {
-        val shadowOffset = elevation.toPx()
-        val outline = shape.createOutline(size, layoutDirection, this)
-
-        val darkShadowOffset = if (inverted) -shadowOffset else shadowOffset
-        val lightShadowOffset = if (inverted) shadowOffset else -shadowOffset
-
-        drawOutline(
-            outline = outline,
-            color = darkColor,
-            style = Fill,
-            alpha = 0.6f,
-            blendMode = BlendMode.SrcOver
-        )
-
-        drawOutline(
-            outline = outline,
-            color = lightColor,
-            style = Fill,
-            alpha = 0.6f,
-            blendMode = BlendMode.SrcOver
-        )
-    }
-)
-
-// Animated Border Modifier
-fun Modifier.animatedBorder(
-    brush: Brush,
-    shape: Shape = RoundedCornerShape(8.dp),
-    borderWidth: Dp = 2.dp
-): Modifier = composed {
-    val infiniteTransition = rememberInfiniteTransition()
-    val translateX by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1000f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(5000, easing = LinearEasing)
-        )
-    )
-
-    this.then(
-        Modifier.drawWithCache {
-            onDrawBehind {
-                val borderWidthPx = borderWidth.toPx()
-                val brushHeight = size.height + borderWidthPx * 2
-
-                drawRect(
-                    brush = brush,
-                    topLeft = Offset(-borderWidthPx + translateX, -borderWidthPx),
-                    size = Size(brushHeight, brushHeight),
-                    blendMode = BlendMode.SrcIn
-                )
-            }
-        }
-    )
-}
-
-// Background Effects
-@Composable
-private fun Modifier.glowingOrbs() =
-    this.then(Modifier.drawBehind {
-        listOf(
-            Pair(0.2f to 0.3f, Color(0xFF8A2BE2)),
-            Pair(0.7f to 0.1f, Color(0xFF00F9FF)),
-            Pair(0.5f to 0.8f, Color(0xFFFF4081))
-        ).forEach { (position, color) ->
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(color.copy(alpha = 0.2f), Color.Transparent),
-                    center = Offset(size.width * position.first, size.height * position.second),
-                    radius = size.minDimension * 0.2f
-                ),
-                center = Offset(size.width * position.first, size.height * position.second),
-                radius = size.minDimension * 0.15f,
-                blendMode = BlendMode.Plus
-            )
-        }
-    })
-
-@Composable
-private fun Modifier.repeatLiquidBackground() =
-    this.drawBehind {
-        val liquidColor = Color(0x2200E5FF)
-        val patternSize = 100.dp.toPx()
-        val path = Path().apply {
-            moveTo(0f, patternSize)
-            quadraticTo(patternSize / 2, 0f, patternSize, patternSize)
-            quadraticTo(patternSize * 1.5f, patternSize * 2, patternSize * 2, patternSize)
-        }
-
-        repeat((size.width / patternSize).toInt() + 1) { x ->
-            repeat((size.height / patternSize).toInt() + 1) { y ->
-                translate(left = x * patternSize, top = y * patternSize) {
-                    drawPath(
-                        path = path,
-                        color = liquidColor,
-                        style = Stroke(2.dp.toPx())
-                    )
-                }
-            }
-        }
-    }
-
-
 
 @PreviewScreenSizes
 @Composable
 private fun PreviewGameModes() {
     MultiplyTheme {
-        GameModeSelectionScreen(onConfirm = { val1->})
+        GameModeSelectionScreen(onConfirm = { _ -> })
     }
 }
 
