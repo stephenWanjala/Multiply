@@ -7,9 +7,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.stephenwanjala.multiply.game.screens.BubbleMathDifficulty
+import com.stephenwanjala.multiply.game.screens.GameMode
+import com.stephenwanjala.multiply.game.screens.GameModeSelectionScreen
 import com.stephenwanjala.multiply.game.screens.InstructionsScreen
 import com.stephenwanjala.multiply.game.screens.SettingsScreen
 import com.stephenwanjala.multiply.game.screens.WelcomeScreen
+import com.stephenwanjala.multiply.game.screens.gamescreen.Difficulty
+import com.stephenwanjala.multiply.game.screens.gamescreen.GameAction
 import com.stephenwanjala.multiply.game.screens.gamescreen.GameScreen
 import com.stephenwanjala.multiply.game.screens.gamescreen.GameViewModel
 import kotlinx.serialization.Serializable
@@ -20,13 +25,46 @@ fun MultiplyNav(
     modifier: Modifier = Modifier
 ) {
     val viewModel = hiltViewModel<GameViewModel>()
-    val state =viewModel.state.collectAsStateWithLifecycle().value
+    val state = viewModel.state.collectAsStateWithLifecycle().value
     NavHost(
         navController = navHostController,
-        startDestination = MultiplyDestination.WelComeDestination,
+        startDestination = MultiplyDestination.SelectGameMode,
         modifier = modifier
     ) {
+        composable<MultiplyDestination.SelectGameMode> {
+            GameModeSelectionScreen { gameMode: GameMode ->
+                when (gameMode) {
+                    is GameMode.BubbleMathBlitz -> {
+                        when (gameMode.difficulty) {
+                            BubbleMathDifficulty.EASY -> viewModel.onAction(
+                                GameAction.UpdateDifficulty(
+                                    difficulty = Difficulty.EASY
+                                )
+                            )
+
+                            BubbleMathDifficulty.MEDIUM -> viewModel.onAction(
+                                GameAction.UpdateDifficulty(
+                                    difficulty = Difficulty.MEDIUM
+                                )
+                            )
+
+                            BubbleMathDifficulty.HARD -> viewModel.onAction(
+                                GameAction.UpdateDifficulty(
+                                    difficulty = Difficulty.HARD
+                                )
+                            )
+                        }
+                        navHostController.navigate(MultiplyDestination.WelComeDestination)
+                    }
+
+                    is GameMode.QuizGenius -> {
+                    }
+                }
+
+            }
+        }
         composable<MultiplyDestination.WelComeDestination> {
+
             WelcomeScreen(
                 onPlayClick = { navHostController.navigate(MultiplyDestination.GameDestination) },
                 onHowToPlayClick = {
@@ -38,9 +76,12 @@ fun MultiplyNav(
         }
 
         composable<MultiplyDestination.SettingsDestination> {
-            SettingsScreen(onBackClick = navHostController::navigateUp,state=state,onAction={ action->
-                viewModel.onAction(action)
-            })
+            SettingsScreen(
+                onBackClick = navHostController::navigateUp,
+                state = state,
+                onAction = { action ->
+                    viewModel.onAction(action)
+                })
         }
         composable<MultiplyDestination.GameInstructionDestination> {
             InstructionsScreen(
@@ -88,4 +129,7 @@ sealed interface MultiplyDestination {
 
     @Serializable
     data object GameDestination : MultiplyDestination
+
+    @Serializable
+    data object SelectGameMode : MultiplyDestination
 }
