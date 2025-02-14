@@ -17,6 +17,9 @@ import com.stephenwanjala.multiply.game.feat_bubblemode.Difficulty
 import com.stephenwanjala.multiply.game.feat_bubblemode.GameAction
 import com.stephenwanjala.multiply.game.feat_bubblemode.GameScreen
 import com.stephenwanjala.multiply.game.feat_bubblemode.GameViewModel
+import com.stephenwanjala.multiply.game.feat_quizmode.QuestionAction
+import com.stephenwanjala.multiply.game.feat_quizmode.QuestionsScreen
+import com.stephenwanjala.multiply.game.feat_quizmode.QuestionsViewModel
 import kotlinx.serialization.Serializable
 
 @Composable
@@ -26,6 +29,8 @@ fun MultiplyNav(
 ) {
     val viewModel = hiltViewModel<GameViewModel>()
     val state = viewModel.state.collectAsStateWithLifecycle().value
+    val questionsVm = hiltViewModel<QuestionsViewModel>()
+    val quzState =questionsVm.state.collectAsStateWithLifecycle().value
     NavHost(
         navController = navHostController,
         startDestination = MultiplyDestination.SelectGameMode,
@@ -58,10 +63,15 @@ fun MultiplyNav(
                     }
 
                     is GameMode.QuizGenius -> {
+                        questionsVm.onAction(QuestionAction.UpdateLevel(gameMode.difficulty))
+                        navHostController.navigate(MultiplyDestination.QuestionsDestination)
                     }
                 }
 
             }
+        }
+        composable<MultiplyDestination.QuestionsDestination> {
+            QuestionsScreen(viewModel=questionsVm, onClosePressed = navHostController::navigateUp)
         }
         composable<MultiplyDestination.WelComeDestination> {
 
@@ -132,4 +142,7 @@ sealed interface MultiplyDestination {
 
     @Serializable
     data object SelectGameMode : MultiplyDestination
+
+    @Serializable
+    data object QuestionsDestination:MultiplyDestination
 }
