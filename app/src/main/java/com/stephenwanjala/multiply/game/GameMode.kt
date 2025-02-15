@@ -185,7 +185,7 @@ fun NeuGameModeCard(mode: String, isSelected: Boolean, onClick: () -> Unit) {
             .width(200.dp)
             .height(260.dp)
             .neumorphicShadow(
-                elevation = elevation,
+                blurRadius = elevation,
                 shape = RoundedCornerShape(24.dp),
                 lightColor = Color(0x44FFFFFF),
                 darkColor = Color(0x66000000)
@@ -283,7 +283,7 @@ fun LevelSelectionGrid(
                     .weight(1f)
                     .padding(8.dp)
                     .neumorphicShadow(
-                        elevation = if (isSelected) 12.dp else 6.dp,
+                        blurRadius = if (isSelected) 12.dp else 6.dp,
                         shape = RoundedCornerShape(16.dp),
                         lightColor = Color(0x44FFFFFF),
                         darkColor = Color(0x66000000)
@@ -380,7 +380,7 @@ fun GradientButton(
         onClick = onClick,
         enabled = enabled,
         modifier = modifier
-            .neumorphicShadow(elevation = elevation),
+            .neumorphicShadow(blurRadius = elevation),
         shape = RoundedCornerShape(16.dp),
         colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
     ) {
@@ -425,7 +425,7 @@ fun NeuSectionTitle(text: String) {
             modifier = Modifier
                 .weight(1f)
                 .neumorphicShadow(
-                    elevation = 4.dp,
+                    blurRadius = 4.dp,
                     shape = RectangleShape,
                     inverted = true
                 ),
@@ -444,7 +444,7 @@ fun NeuSectionTitle(text: String) {
             modifier = Modifier
                 .weight(1f)
                 .neumorphicShadow(
-                    elevation = 4.dp,
+                    blurRadius = 4.dp,
                     shape = RectangleShape,
                     inverted = true
                 ),

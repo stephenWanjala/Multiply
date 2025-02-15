@@ -20,44 +20,44 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawOutline
-import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-// Neumorphic Shadow Modifier
 fun Modifier.neumorphicShadow(
-    elevation: Dp,
+    offset: Dp = 6.dp,
+    blurRadius: Dp = 6.dp,
     shape: Shape = RoundedCornerShape(8.dp),
-    lightColor: Color = Color(0x55FFFFFF),
-    darkColor: Color = Color(0x55000000),
+    lightColor: Color = Color.White.copy(alpha = 0.7f),
+    darkColor: Color = Color.Black.copy(alpha = 0.2f),
     inverted: Boolean = false
-): Modifier = this.then(
-    Modifier.drawBehind {
-        val shadowOffset = elevation.toPx()
-        val outline = shape.createOutline(size, layoutDirection, this)
+): Modifier =
+    this.then(
+        Modifier.drawBehind {
+            val shadowOffset = offset.toPx()
+            val shadowBlur = blurRadius.toPx()
+            val alpha = (shadowBlur / 100f).coerceIn(0f, 1f)
+            val outline = shape.createOutline(size, layoutDirection, this)
 
-        val darkShadowOffset = if (inverted) -shadowOffset else shadowOffset
-        val lightShadowOffset = if (inverted) shadowOffset else -shadowOffset
+            fun drawShadow(color: Color, offset: Offset) {
+                drawOutline(
+                    outline = outline,
+                    color = color.copy(alpha = alpha),
+                    style = Stroke(width = shadowBlur),
+//                    topLeft = offset
+                )
+            }
 
-        drawOutline(
-            outline = outline,
-            color = darkColor,
-            style = Fill,
-            alpha = 0.6f,
-            blendMode = BlendMode.SrcOver
-        )
-
-        drawOutline(
-            outline = outline,
-            color = lightColor,
-            style = Fill,
-            alpha = 0.6f,
-            blendMode = BlendMode.SrcOver
-        )
-    }
-)
+            if (inverted) {
+                drawShadow(darkColor, Offset(shadowOffset, shadowOffset))
+                drawShadow(lightColor, Offset(-shadowOffset, -shadowOffset))
+            } else {
+                drawShadow(lightColor, Offset(-shadowOffset, -shadowOffset))
+                drawShadow(darkColor, Offset(shadowOffset, shadowOffset))
+            }
+        }
+    )
 
 // Animated Border Modifier
 fun Modifier.animatedBorder(

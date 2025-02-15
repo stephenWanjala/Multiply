@@ -1,21 +1,41 @@
 package com.stephenwanjala.multiply.game.feat_quizmode
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides.Companion.Bottom
 import androidx.compose.foundation.layout.WindowInsetsSides.Companion.Horizontal
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
@@ -33,11 +53,17 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.stephenwanjala.multiply.game.components.glowingOrbs
+import com.stephenwanjala.multiply.game.components.neumorphicShadow
 import com.stephenwanjala.multiply.ui.theme.MultiplyTheme
 
 @Composable
@@ -68,7 +94,10 @@ fun QuestionsScreen(viewModel: QuestionsViewModel, onClosePressed: () -> Unit) {
                 modifier = Modifier
                     .padding(padding)
                     .fillMaxSize()
-                    .padding(24.dp)
+                    .glowingOrbs()
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 QuestionContent(
                     state = state,
@@ -87,39 +116,142 @@ private fun QuestionContent(
     onAnswerSelected: (Int) -> Unit
 ) {
     val currentQuestion = state.currentQuestion
+    val infiniteTransition = rememberInfiniteTransition()
+    val animatedOffset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 8f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(8.dp)
+            .padding(8.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = currentQuestion?.question ?: "Loading...",
-            style = MaterialTheme.typography.displayMedium,
-            color = MaterialTheme.colorScheme.onBackground,
+        // Floating question card with dynamic shadow
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 32.dp)
-        )
+                .neumorphicShadow(
+//                    el = animatedOffset.dp,
+//                    blurRadius = 24.dp,
+                    lightColor = MaterialTheme.colorScheme.surface
+                )
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.primaryContainer,
+                            MaterialTheme.colorScheme.secondaryContainer
+                        )
+                    ),
+                    shape = RoundedCornerShape(16.dp)
+                )
+                .padding(24.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = currentQuestion?.question ?: "🎲 Loading...",
+                style = MaterialTheme.typography.displayMedium.copy(
+                    fontWeight = FontWeight.ExtraBold,
+                    textAlign = TextAlign.Center
+                ),
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.offset(y = (-animatedOffset).dp)
+            )
+        }
 
         Spacer(modifier = Modifier.weight(1f))
 
-        currentQuestion?.allAnswers?.chunked(2)?.forEach { rowAnswers ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                rowAnswers.forEach { answer ->
-                    AnswerOption(
-                        answer = answer,
-                        isSelected = answer == state.selectedAnswer,
-                        modifier = Modifier.weight(1f),
-                        onSelected = { onAnswerSelected(answer) }
-                    )
-                }
+        // Answer grid with animated entries
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            items(currentQuestion?.allAnswers?.size ?: 0) { index ->
+                val answer = currentQuestion?.allAnswers?.get(index) ?: 0
+                val isSelected = answer == state.selectedAnswer
+
+                AnswerParticle(
+                    number = answer,
+                    isSelected = isSelected,
+                    onClick = { onAnswerSelected(answer) }
+                )
             }
-            Spacer(modifier = Modifier.height(16.dp))
         }
+
+        // Progress emojis
+        Row(
+            modifier = Modifier.padding(top = 24.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            repeat(state.questions.size) { index ->
+                val emoji = when {
+                    index < state.currentQuestionIndex -> "✅"
+                    index == state.currentQuestionIndex -> "🎯"
+                    else -> "➖"
+                }
+                Text(
+                    text = emoji,
+                    modifier = Modifier
+                        .scale(if (index == state.currentQuestionIndex) 1.2f else 1f)
+                        .animateContentSize()
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AnswerParticle(
+    number: Int,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val animatedColor by animateColorAsState(
+        targetValue = if (isSelected) MaterialTheme.colorScheme.primary
+        else MaterialTheme.colorScheme.surfaceVariant,
+        animationSpec = spring(stiffness = Spring.StiffnessLow)
+    )
+
+    val animatedElevation by animateDpAsState(
+        targetValue = if (isSelected) 16.dp else 8.dp
+    )
+
+    Box(
+        modifier = Modifier
+            .aspectRatio(1f)
+            .neumorphicShadow(
+                offset = 8.dp,
+                blurRadius = animatedElevation,
+                shape = CircleShape,
+                inverted = true
+            )
+
+            .background(
+                color = animatedColor,
+                shape = CircleShape
+            )
+            .clickable(onClick = onClick)
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = number.toString(),
+            style = MaterialTheme.typography.headlineLarge.copy(
+                fontWeight = FontWeight.Black,
+                color = if (isSelected) MaterialTheme.colorScheme.onPrimary
+                else MaterialTheme.colorScheme.onSurfaceVariant
+            ),
+            modifier = Modifier.scale(if (isSelected) 1.15f else 1f)
+        )
     }
 }
 
