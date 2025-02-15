@@ -1,6 +1,7 @@
 package com.stephenwanjala.multiply.game.feat_quizmode
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -32,29 +34,130 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.stephenwanjala.multiply.ui.theme.MultiplyTheme
 
 @Composable
-fun QuestionsScreen(viewModel: QuestionsViewModel,onClosePressed:()->Unit) {
-    val state =viewModel.state.collectAsStateWithLifecycle().value
-    Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
-        Scaffold(modifier = Modifier.fillMaxSize(), topBar = {
-            QuestionsTopAppBar(
-                modifier = Modifier,
-                onClosePressed = onClosePressed,
-                currentQuestionIndex = state.currentQuestionIndex,
-                totalCount = state.questions.count()
-            )
-        }) { paddingValues ->
+fun QuestionsScreen(viewModel: QuestionsViewModel, onClosePressed: () -> Unit) {
+    val state = viewModel.state.collectAsStateWithLifecycle().value
 
+    Surface(color = MaterialTheme.colorScheme.background) {
+        Scaffold(
+            topBar = {
+                QuestionsTopAppBar(
+                    onClosePressed = onClosePressed,
+                    currentQuestionIndex = state.currentQuestionIndex,
+                    totalCount = state.questions.size
+                )
+            },
+            bottomBar = {
+                QuestionBottomBar(
+                    shouldShowPreviousButton = state.currentQuestionIndex > 0,
+                    shouldShowDoneButton = state.currentQuestionIndex == state.questions.lastIndex,
+                    isNextButtonEnabled = state.selectedAnswer != null,
+                    onPreviousPressed = { viewModel.onAction(QuestionAction.PreviousQuestion) },
+                    onNextPressed = { viewModel.onAction(QuestionAction.NextQuestion) },
+                    onDonePressed = { viewModel.onAction(QuestionAction.SubmitAnswer) }
+                )
+            }
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .padding(padding)
+                    .fillMaxSize()
+                    .padding(24.dp)
+            ) {
+                QuestionContent(
+                    state = state,
+                    onAnswerSelected = { answer ->
+                        viewModel.onAction(QuestionAction.SelectAnswer(answer))
+                    }
+                )
+            }
         }
     }
+}
 
+@Composable
+private fun QuestionContent(
+    state: QuestionsState,
+    onAnswerSelected: (Int) -> Unit
+) {
+    val currentQuestion = state.currentQuestion
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(8.dp)
+    ) {
+        Text(
+            text = currentQuestion?.question ?: "Loading...",
+            style = MaterialTheme.typography.displayMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 32.dp)
+        )
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        currentQuestion?.allAnswers?.chunked(2)?.forEach { rowAnswers ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                rowAnswers.forEach { answer ->
+                    AnswerOption(
+                        answer = answer,
+                        isSelected = answer == state.selectedAnswer,
+                        modifier = Modifier.weight(1f),
+                        onSelected = { onAnswerSelected(answer) }
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
+}
+
+@Composable
+private fun AnswerOption(
+    answer: Int,
+    isSelected: Boolean,
+    modifier: Modifier = Modifier,
+    onSelected: () -> Unit
+) {
+    val backgroundColor = if (isSelected) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant
+    }
+
+    val contentColor = if (isSelected) {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    OutlinedButton(
+        onClick = onSelected,
+        modifier = modifier
+            .height(80.dp),
+        colors = ButtonDefaults.outlinedButtonColors(
+            containerColor = backgroundColor,
+            contentColor = contentColor
+        ),
+        border = ButtonDefaults.outlinedButtonBorder(enabled = isSelected)
+    ) {
+        Text(
+            text = answer.toString(),
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold
+        )
+    }
 }
 
 
@@ -148,7 +251,8 @@ fun QuestionBottomBar(
                     modifier = Modifier
                         .weight(1f)
                         .height(48.dp),
-                    onClick = onPreviousPressed
+                    onClick = onPreviousPressed,
+                    shape = MaterialTheme.shapes.medium
                 ) {
                     Text(text = "Previous")
                 }
@@ -180,6 +284,7 @@ fun QuestionBottomBar(
         }
     }
 }
+
 @PreviewLightDark
 @Composable
 private fun QuestionsScreenPreview() {

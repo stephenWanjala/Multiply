@@ -34,12 +34,36 @@ class QuestionsViewModel @Inject constructor(
             }
         }
     }
-    fun onAction(action: QuestionAction){
-        when(action){
-            QuestionAction.NextQuestion -> TODO()
-            QuestionAction.PreviousQuestion -> TODO()
-            is QuestionAction.SelectAnswer -> TODO()
-            QuestionAction.SubmitAnswer -> TODO()
+    fun onAction(action: QuestionAction) {
+        when (action) {
+            is QuestionAction.SelectAnswer -> {
+                _state.update { it.copy(selectedAnswer = action.answer) }
+            }
+            QuestionAction.SubmitAnswer -> {
+                submitAnswers()
+            }
+            QuestionAction.NextQuestion -> {
+                _state.update { state ->
+                    val nextIndex = state.currentQuestionIndex + 1
+                    state.copy(
+                        currentQuestionIndex = nextIndex,
+                        currentQuestion = state.questions.getOrNull(nextIndex),
+                        selectedAnswer = null,
+                        showDoneButton = nextIndex == state.questions.lastIndex
+                    )
+                }
+            }
+            QuestionAction.PreviousQuestion -> {
+                _state.update { state ->
+                    val prevIndex = state.currentQuestionIndex - 1
+                    state.copy(
+                        currentQuestionIndex = prevIndex,
+                        currentQuestion = state.questions.getOrNull(prevIndex),
+                        selectedAnswer = state.selectedAnswers[prevIndex],
+                        showDoneButton = false
+                    )
+                }
+            }
             is QuestionAction.UpdateLevel -> {
                 setDifficulty(action.level)
             }
@@ -52,7 +76,7 @@ class QuestionsViewModel @Inject constructor(
     private  fun setUpQuestions(){
         val questions = generateQuestions(state.value.level)
         println(questions)
-        _state.update { it.copy(questions = questions.toSet(), currentQuestion = questions.first()) }
+        _state.update { it.copy(questions = questions, currentQuestion = questions.first()) }
     }
 
     private fun setDifficulty(difficulty: QuizDifficulty) {
@@ -63,18 +87,35 @@ class QuestionsViewModel @Inject constructor(
             }
         }
     }
+
+    private fun submitAnswers() {
+        viewModelScope.launch {
+            val results = state.value.questions.mapIndexed { index, question ->
+                GameResult(
+                    question = question.question,
+                    correctAnswer = question.answer,
+                    userAnswer = state.value.selectedAnswers[index] ?: -1,
+                    isCorrect = state.value.selectedAnswers[index] == question.answer
+                )
+            }
+            _state.update { it.copy(results = results) }
+            // Handle navigation to results screen
+        }
+    }
 }
 
 
 data class QuestionsState(
     val currentQuestion: MathQuestion? = null,
     val level: QuizDifficulty = QuizDifficulty.BEGINNER,
-    val questions: Set<MathQuestion> = emptySet(),
+    val questions: List<MathQuestion> = emptyList(),
     val results: List<GameResult> = emptyList(),
     val nextButtonEnabled: Boolean = false,
     val showPreviousButton: Boolean = false,
     val showDoneButton: Boolean = false,
-    val currentQuestionIndex:Int =0
+    val currentQuestionIndex:Int =0,
+    val selectedAnswers: Map<Int, Int> = emptyMap(),
+    val selectedAnswer: Int? = null
     )
 
 data class GameResult(
