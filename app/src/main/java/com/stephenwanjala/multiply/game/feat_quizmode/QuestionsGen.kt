@@ -18,22 +18,29 @@ fun generateQuestion(difficulty: QuizDifficulty): MathQuestion {
                 Triple(
                     difficulty.numberRange.random(random),
                     difficulty.numberRange.random(random),
-                    listOf("+", "-").random(random))
+                    listOf("+", "-").random(random)
+                )
+
             QuizDifficulty.INTERMEDIATE ->
                 Triple(
                     difficulty.numberRange.random(random),
                     (2..20).random(random),
-                    listOf("+", "-", "*", "/").random(random))
+                    listOf("+", "-", "*", "/").random(random)
+                )
+
             QuizDifficulty.ADVANCED ->
                 Triple(
                     difficulty.numberRange.random(random),
                     (2..10).random(random),
-                    listOf("+", "-", "*", "/", "%", "^").random(random))
+                    listOf("+", "-", "*", "/", "%", "^").random(random)
+                )
+
             QuizDifficulty.EXPERT ->
                 Triple(
                     difficulty.numberRange.random(random),
                     (2..15).random(random),
-                    listOf("+", "-", "*", "/", "%", "^", "()", "exp").random(random))
+                    listOf("+", "-", "*", "/", "%", "^", "()", "exp").random(random)
+                )
         }
 
     val (finalNum1, finalNum2) =
@@ -52,19 +59,57 @@ fun generateQuestion(difficulty: QuizDifficulty): MathQuestion {
                 if (finalNum2 == 0) finalNum1 // Avoid division by zero in the question itself
                 else finalNum1 / finalNum2
             }
+
             "%" -> {
                 if (finalNum2 == 0) 0 // Avoid modulo by zero
                 else finalNum1 % finalNum2
             }
+
             "^" -> finalNum1.toDouble().pow(finalNum2.toDouble()).toInt()
             "()" -> {
                 val num3 = (1..10).random(random)
-                ((finalNum1 + finalNum2) * num3) / finalNum2
+                val operation1 = listOf("+", "-").random(random)
+                val operation2 = listOf("*", "/").random(random)
+
+                // Ensure no division by zero
+                val safeNum2 = if (finalNum2 == 0) 1 else finalNum2
+
+                val question = "($finalNum1 $operation1 $safeNum2) $operation2 $num3"
+
+                val answer =
+                    when (operation2) {
+                        "*" ->
+                            when (operation1) {
+                                "+" -> (finalNum1 + safeNum2) * num3
+                                "-" -> (finalNum1 - safeNum2) * num3
+                                else -> 0 // Should not happen
+                            }
+
+                        "/" ->
+                            when (operation1) {
+                                "+" -> (finalNum1 + safeNum2) / num3
+                                "-" -> (finalNum1 - safeNum2) / num3
+                                else -> 0 // Should not happen
+                            }
+
+                        else -> 0 // Should not happen
+                    }
+
+                val wrongAnswers = generateWrongAnswers(answer, difficulty)
+
+                return MathQuestion(
+                    question = question,
+                    level = difficulty,
+                    answer = answer,
+                    wrongAnswers = wrongAnswers
+                )
             }
+
             "exp" -> {
                 val base = (2..5).random(random)
                 base.toDouble().pow(finalNum1.toDouble()).toInt()
             }
+
             else -> finalNum1 + finalNum2
         }
 
@@ -74,9 +119,9 @@ fun generateQuestion(difficulty: QuizDifficulty): MathQuestion {
         question = "$finalNum1 $operation $finalNum2",
         level = difficulty,
         answer = answer,
-        wrongAnswers = wrongAnswers)
+        wrongAnswers = wrongAnswers
+    )
 }
-
 
 
 fun generateWrongAnswers(correctAnswer: Int, difficulty: QuizDifficulty): List<Int> {

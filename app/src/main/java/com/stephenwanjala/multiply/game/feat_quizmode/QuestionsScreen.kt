@@ -415,10 +415,3 @@ fun QuestionBottomBar(
     }
 }
 
-@PreviewLightDark
-@Composable
-private fun QuestionsScreenPreview() {
-    MultiplyTheme {
-//        QuestionsScreen(hiltViewModel())
-    }
-}

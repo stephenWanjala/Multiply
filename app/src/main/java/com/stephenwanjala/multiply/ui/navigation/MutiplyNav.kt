@@ -30,7 +30,6 @@ fun MultiplyNav(
     val viewModel = hiltViewModel<GameViewModel>()
     val state = viewModel.state.collectAsStateWithLifecycle().value
     val questionsVm = hiltViewModel<QuestionsViewModel>()
-    val quzState =questionsVm.state.collectAsStateWithLifecycle().value
     NavHost(
         navController = navHostController,
         startDestination = MultiplyDestination.SelectGameMode,
