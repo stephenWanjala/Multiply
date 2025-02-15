@@ -139,8 +139,6 @@ private fun QuestionContent(
                 .fillMaxWidth()
                 .padding(vertical = 32.dp)
                 .neumorphicShadow(
-//                    el = animatedOffset.dp,
-//                    blurRadius = 24.dp,
                     lightColor = MaterialTheme.colorScheme.surface
                 )
                 .background(
