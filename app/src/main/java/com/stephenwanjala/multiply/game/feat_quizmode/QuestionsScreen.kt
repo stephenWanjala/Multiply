@@ -32,14 +32,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -51,20 +56,21 @@ import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.stephenwanjala.multiply.game.components.glowingOrbs
 import com.stephenwanjala.multiply.game.components.neumorphicShadow
-import com.stephenwanjala.multiply.ui.theme.MultiplyTheme
 
 @Composable
 fun QuestionsScreen(viewModel: QuestionsViewModel, onClosePressed: () -> Unit) {
@@ -415,3 +421,102 @@ fun QuestionBottomBar(
     }
 }
 
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun RecapScreen(viewModel: QuestionsViewModel) {
+    Surface(
+        color = MaterialTheme.colorScheme.background,
+        modifier = Modifier
+            .fillMaxSize()
+            .glowingOrbs()
+    ) {
+        Scaffold(topBar = {
+            TopAppBar(title = { Text(text = "Recap ") }, actions = {
+                IconButton(onClick = { /*TODO*/ }) {
+                    Icon(imageVector = Icons.Default.Close, contentDescription = "Close")
+                }
+            })
+        }) { paddingValues ->
+            LazyColumn(
+                contentPadding = paddingValues
+            ) {
+//                itemsIndexed(gameResults) { index, result ->
+//                    QuestionRecapItem(questionNumber = index + 1, result = result)
+//                    Spacer(modifier = Modifier.height(8.dp))
+//                }
+            }
+
+        }
+    }
+
+}
+
+
+@Composable
+fun AnswerRow(answer: Int, isUserAnswer: Boolean, isCorrect: Boolean) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = answer.toString(),
+            style = MaterialTheme.typography.bodyMedium,
+            color = when {
+                isCorrect -> Color(0xFF4CAF50)
+                isUserAnswer -> Color.Gray
+                else -> MaterialTheme.colorScheme.onSurface
+            },
+            textDecoration = if (isUserAnswer && !isCorrect) TextDecoration.LineThrough else TextDecoration.None,
+            modifier = Modifier.weight(1f)
+        )
+        if (isCorrect) {
+            Icon(
+                imageVector = Icons.Filled.Check,
+                contentDescription = "Correct Answer",
+                tint = Color(0xFF4CAF50)
+            )
+        } else if (isUserAnswer) {
+            Icon(
+                imageVector = Icons.Filled.Close,
+                contentDescription = "Wrong Answer",
+                tint = MaterialTheme.colorScheme.error
+            )
+        }
+    }
+}
+
+@Composable
+fun QuestionRecapItem(questionNumber: Int, result: GameResult) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = "Question $questionNumber: ${result.question}",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            AnswerRow(
+                answer = result.correctAnswer,
+                isUserAnswer = result.userAnswer == result.correctAnswer,
+                isCorrect = true
+            )
+            if (!result.isCorrect) {
+                AnswerRow(
+                    answer = result.userAnswer,
+                    isUserAnswer = true,
+                    isCorrect = false
+                )
+            }
+        }
+    }
+}
