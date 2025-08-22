@@ -1,5 +1,7 @@
 package com.stephenwanjala.multiply.game.feat_quizmode
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -12,6 +14,13 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -73,6 +82,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.stephenwanjala.multiply.game.components.glowingOrbs
 import com.stephenwanjala.multiply.game.components.neumorphicShadow
 
+const val EMOJI_DISPLAY_THRESHOLD = 12
+
 @Composable
 fun QuestionsScreen(viewModel: QuestionsViewModel, onClosePressed: () -> Unit) {
     val state = viewModel.state.collectAsStateWithLifecycle().value
@@ -127,14 +138,15 @@ private fun QuestionContent(
     onAnswerSelected: (Int) -> Unit
 ) {
     val currentQuestion = state.currentQuestion
-    val infiniteTransition = rememberInfiniteTransition()
+    val infiniteTransition = rememberInfiniteTransition(label = "infiniteTransition")
     val animatedOffset by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 8f,
         animationSpec = infiniteRepeatable(
             animation = tween(1000, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
-        )
+        ),
+        label = "animatedOffset"
     )
 
     Column(
@@ -164,15 +176,24 @@ private fun QuestionContent(
                 .padding(24.dp),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = currentQuestion?.question ?: "🎲 Loading...",
-                style = MaterialTheme.typography.displayMedium.copy(
-                    fontWeight = FontWeight.ExtraBold,
-                    textAlign = TextAlign.Center
-                ),
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.offset(y = (-animatedOffset).dp)
-            )
+            AnimatedContent(
+                targetState = currentQuestion?.question,
+                transitionSpec = {
+                    (slideInHorizontally { height -> height } + fadeIn())
+                        .togetherWith(slideOutHorizontally { height -> -height } + fadeOut())
+                },
+                label = "questionTextAnimation"
+            ) { targetQuestionText ->
+                Text(
+                    text = targetQuestionText ?: "🎲 Loading...",
+                    style = MaterialTheme.typography.displayMedium.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        textAlign = TextAlign.Center
+                    ),
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.offset(y = (-animatedOffset).dp) // Keep the floating animation
+                )
+            }
         }
 
 //        Spacer(modifier = Modifier.weight(1f))
@@ -196,22 +217,72 @@ private fun QuestionContent(
             }
         }
 
-        // Progress emojis
+
         Row(
             modifier = Modifier.padding(top = 24.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            repeat(state.questions.size) { index ->
-                val emoji = when {
-                    index < state.currentQuestionIndex -> "✅"
-                    index == state.currentQuestionIndex -> "🎯"
-                    else -> "➖"
+            if (state.questions.size <= EMOJI_DISPLAY_THRESHOLD) {
+                // Detailed emoji display
+                repeat(state.questions.size) { index ->
+                    val isCurrent = index == state.currentQuestionIndex
+                    val emoji = when {
+                        index < state.currentQuestionIndex -> "✅"
+                        isCurrent -> "🎯"
+                        else -> "➖"
+                    }
+                    val scale by animateFloatAsState(
+                        targetValue = if (isCurrent) 1.5f else 1f,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessLow
+                        ),
+                        label = "emojiScaleAnimation"
+                    )
+
+                    AnimatedContent(
+                        targetState = emoji,
+                        transitionSpec = {
+                            (fadeIn(animationSpec = tween(220, delayMillis = 90)) +
+                                    scaleIn(animationSpec = tween(220, delayMillis = 90), initialScale = 0.9f))
+                                .togetherWith(fadeOut(animationSpec = tween(90)) +
+                                        scaleOut(animationSpec = tween(90), targetScale = 0.9f))
+                        },
+                        label = "emojiTextAnimation",
+                        modifier = Modifier.scale(scale)
+                    ) { targetEmoji ->
+                        Text(text = targetEmoji)
+                    }
                 }
+            } else {
+                val currentEmoji = "🎯"
+                val scale by animateFloatAsState(
+                    targetValue = 1.5f,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow
+                    ),
+                    label = "currentEmojiScale"
+                )
+                AnimatedContent(
+                    targetState = currentEmoji,
+                    transitionSpec = {
+                        (fadeIn(animationSpec = tween(220, delayMillis = 90)) +
+                                scaleIn(animationSpec = tween(220, delayMillis = 90), initialScale = 0.9f))
+                            .togetherWith(fadeOut(animationSpec = tween(90)) +
+                                    scaleOut(animationSpec = tween(90), targetScale = 0.9f))
+                    },
+                    label = "currentEmojiAnimation",
+                    modifier = Modifier.scale(scale)
+                ) { targetEmoji ->
+                    Text(text = targetEmoji)
+                }
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = emoji,
-                    modifier = Modifier
-                        .scale(if (index == state.currentQuestionIndex) 1.2f else 1f)
-                        .animateContentSize()
+                    text = "${state.currentQuestionIndex + 1} / ${state.questions.size}",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
                 )
             }
         }
@@ -227,41 +298,61 @@ private fun AnswerParticle(
     val animatedColor by animateColorAsState(
         targetValue = if (isSelected) MaterialTheme.colorScheme.primary
         else MaterialTheme.colorScheme.surfaceVariant,
-        animationSpec = spring(stiffness = Spring.StiffnessLow)
+        animationSpec = spring(stiffness = Spring.StiffnessLow),
+        label = "answerParticleColor"
     )
 
     val animatedElevation by animateDpAsState(
-        targetValue = if (isSelected) 16.dp else 8.dp
+        targetValue = if (isSelected) 16.dp else 8.dp,
+        label = "answerParticleElevation"
     )
+
+    val shape = RoundedCornerShape(16.dp)
 
     Box(
         modifier = Modifier
             .padding(16.dp)
-            .aspectRatio(1f)
+            .fillMaxWidth()
+            .height(80.dp)
             .neumorphicShadow(
                 offset = 8.dp,
                 blurRadius = animatedElevation,
-                shape = CircleShape,
+                shape = shape,
                 inverted = true
             )
             .background(
                 color = animatedColor,
-                shape = CircleShape
-            ).clip(CircleShape)
+                shape = shape
+            )
+            .clip(shape)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = number.toString(),
-            style = MaterialTheme.typography.headlineLarge.copy(
-                fontWeight = FontWeight.Black,
-                color = if (isSelected) MaterialTheme.colorScheme.onPrimary
-                else MaterialTheme.colorScheme.onSurfaceVariant
-            ),
-            modifier = Modifier.scale(if (isSelected) 1.15f else 1f)
-        )
+        AnimatedContent(
+            targetState = number.toString(),
+            transitionSpec = {
+                (fadeIn(animationSpec = tween(220, delayMillis = 90)) +
+                        scaleIn(animationSpec = tween(220, delayMillis = 90), initialScale = 0.9f))
+                    .togetherWith(fadeOut(animationSpec = tween(90)) +
+                            scaleOut(animationSpec = tween(90), targetScale = 0.9f))
+            },
+            label = "answerTextAnimation"
+        ) { targetNumberText ->
+            Text(
+                text = targetNumberText,
+                style = MaterialTheme.typography.headlineLarge.copy(
+                    fontWeight = FontWeight.Black,
+                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary
+                    else MaterialTheme.colorScheme.onSurfaceVariant
+                ),
+                modifier = Modifier.scale(if (isSelected) 1.15f else 1f),
+                textAlign = TextAlign.Center,
+                maxLines = 1
+            )
+        }
     }
 }
+
 
 @Composable
 private fun AnswerOption(
@@ -334,7 +425,8 @@ fun QuestionsTopAppBar(
 
         val animatedProgress by animateFloatAsState(
             targetValue = if (totalCount > 0) (currentQuestionIndex + 1) / totalCount.toFloat() else 0f,
-            animationSpec = ProgressIndicatorDefaults.ProgressAnimationSpec
+            animationSpec = ProgressIndicatorDefaults.ProgressAnimationSpec,
+            label = "questionProgress"
         )
         LinearProgressIndicator(
             progress = { animatedProgress },
