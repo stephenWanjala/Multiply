@@ -59,38 +59,6 @@ fun Modifier.neumorphicShadow(
         }
     )
 
-// Animated Border Modifier
-fun Modifier.animatedBorder(
-    brush: Brush,
-    shape: Shape = RoundedCornerShape(8.dp),
-    borderWidth: Dp = 2.dp
-): Modifier = composed {
-    val infiniteTransition = rememberInfiniteTransition()
-    val translateX by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1000f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(5000, easing = LinearEasing)
-        )
-    )
-
-    this.then(
-        Modifier.drawWithCache {
-            onDrawBehind {
-                val borderWidthPx = borderWidth.toPx()
-                val brushHeight = size.height + borderWidthPx * 2
-
-                drawRect(
-                    brush = brush,
-                    topLeft = Offset(-borderWidthPx + translateX, -borderWidthPx),
-                    size = Size(brushHeight, brushHeight),
-                    blendMode = BlendMode.SrcIn
-                )
-            }
-        }
-    )
-}
-
 // Background Effects
 @Composable
 fun Modifier.glowingOrbs() =
