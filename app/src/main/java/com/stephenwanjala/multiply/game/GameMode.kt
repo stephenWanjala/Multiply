@@ -1,9 +1,23 @@
 package com.stephenwanjala.multiply.game
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,27 +32,33 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -54,7 +74,9 @@ import com.stephenwanjala.multiply.game.components.neumorphicShadow
 import com.stephenwanjala.multiply.game.components.repeatLiquidBackground
 import com.stephenwanjala.multiply.game.models.BubbleMathDifficulty
 import com.stephenwanjala.multiply.game.models.GameMode
+import com.stephenwanjala.multiply.game.models.GameModeSaver
 import com.stephenwanjala.multiply.game.models.ModeDifficulty
+import com.stephenwanjala.multiply.game.models.ModeDifficultySaver
 import com.stephenwanjala.multiply.game.models.QuizDifficulty
 import com.stephenwanjala.multiply.ui.theme.MultiplyTheme
 import kotlinx.coroutines.launch
@@ -65,18 +87,26 @@ fun GameModeSelectionScreen(
     lastHighScoreProvider: (GameMode, ModeDifficulty) -> Int = { _, _ -> 0 }
 ) {
     val coroutineScope = rememberCoroutineScope()
-    var selectedMode by remember { mutableStateOf<GameMode?>(null) }
-    var selectedDifficulty by remember { mutableStateOf<ModeDifficulty?>(null) }
+    var selectedMode by rememberSaveable(stateSaver = GameModeSaver) {
+        mutableStateOf<GameMode?>(null)
+    }
+
+    var selectedDifficulty by rememberSaveable(stateSaver = ModeDifficultySaver) {
+        mutableStateOf<ModeDifficulty?>(null)
+    }
+
 
     val modes = listOf(
         GameMode.BubbleMathBlitz(BubbleMathDifficulty.EASY),
         GameMode.QuizGenius(QuizDifficulty.BEGINNER)
     )
 
-    val difficultiesMap = mapOf(
-        GameMode.BubbleMathBlitz(BubbleMathDifficulty.EASY)::class to BubbleMathDifficulty.entries,
-        GameMode.QuizGenius(QuizDifficulty.BEGINNER)::class to QuizDifficulty.entries
-    )
+    if (selectedMode != null) {
+        BackHandler {
+            selectedMode = null
+            selectedDifficulty = null
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -108,9 +138,12 @@ fun GameModeSelectionScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 NeonText(
-                    text = "SELECT MODE",
+                    text = "SELECT YOUR CHALLENGE",
                     gradient = listOf(Color(0xFF00F9FF), Color(0xFF8A2BE2)),
-                    modifier = Modifier.padding(vertical = 16.dp)
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(vertical = 16.dp),
+                    fontSize = 20.sp
                 )
                 Image(
                     painter = painterResource(id = R.drawable.math_mascot),
@@ -121,68 +154,206 @@ fun GameModeSelectionScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Step 1: GameMode selection
-            if (selectedMode == null) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
+            // Step 1: GameMode selection - Always visible but fades/scales out when mode is selected
+            AnimatedVisibility(
+                visible = selectedMode == null,
+                enter = fadeIn(animationSpec = tween(400, delayMillis = 200)) +
+                        scaleIn(
+                            initialScale = 0.8f,
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioLowBouncy,
+                                stiffness = Spring.StiffnessLow
+                            )
+                        ),
+                exit = fadeOut(animationSpec = tween(300)) +
+                        scaleOut(
+                            targetScale = 0.8f,
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioNoBouncy,
+                                stiffness = Spring.StiffnessMedium
+                            )
+                        ),
+                label = "GameModeSelection"
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    MaterialSectionTitle(text = "Choose Game Mode")
+                    Spacer(modifier = Modifier.height(16.dp))
+
                     modes.forEach { modeOption ->
-                        NeuGameModeCard(
+                        Material3GameModeCard(
                             mode = modeOption,
-                            isSelected = selectedMode == modeOption,
-                            onClick = { selectedMode = modeOption; selectedDifficulty = null }
+                            isSelected = false, // Never show as selected in this view
+                            onClick = {
+                                selectedMode = modeOption
+                                selectedDifficulty = null
+                            }
                         )
                     }
                 }
             }
 
-            // Step 2: Difficulty selection
-            selectedMode?.let { mode ->
-                val availableDifficulties = when (mode) {
-                    is GameMode.BubbleMathBlitz -> BubbleMathDifficulty.entries
-                    is GameMode.QuizGenius -> QuizDifficulty.entries
-                }
-                Spacer(modifier = Modifier.height(32.dp))
-                Text(text = "Choose Difficulty:", fontWeight = FontWeight.Bold)
-                LevelSelectionGrid(
-                    levels = availableDifficulties,
-                    selectedLevel = selectedDifficulty,
-                    onLevelSelected = { level ->
-                        selectedDifficulty = when (mode) {
-                            is GameMode.BubbleMathBlitz -> ModeDifficulty.Bubble(level as BubbleMathDifficulty)
-                            is GameMode.QuizGenius -> ModeDifficulty.Quiz(level as QuizDifficulty)
+            // Step 2: Difficulty selection - Slides up from bottom with smooth animation
+            AnimatedVisibility(
+                visible = selectedMode != null,
+                enter = fadeIn(animationSpec = tween(400, delayMillis = 150)) +
+                        slideInVertically(
+                            initialOffsetY = { it / 2 }, // Start from halfway down
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessLow
+                            )
+                        ) +
+                        expandVertically(
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessLow
+                            )
+                        ),
+                exit = fadeOut(animationSpec = tween(250)) +
+                        slideOutVertically(
+                            targetOffsetY = { it / 3 },
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioNoBouncy,
+                                stiffness = Spring.StiffnessMedium
+                            )
+                        ) +
+                        shrinkVertically(
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioNoBouncy,
+                                stiffness = Spring.StiffnessMedium
+                            )
+                        ),
+                label = "DifficultySelection"
+            ) {
+                selectedMode?.let { targetMode ->
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        MaterialSectionTitle(text = "Choose Difficulty for ${targetMode.name}")
+
+                        val availableDifficulties = when (targetMode) {
+                            is GameMode.BubbleMathBlitz -> BubbleMathDifficulty.entries
+                            is GameMode.QuizGenius -> QuizDifficulty.entries
                         }
-                    }
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                // Show contextual high score
-                selectedDifficulty?.let { diff ->
-                    val highScore = lastHighScoreProvider(mode, diff)
-                    if (highScore > 0) {
-                        Text(
-                            text = "Best Score: $highScore",
-                            color = Color.Yellow,
-                            fontWeight = FontWeight.Bold
+
+                        Material3LevelSelectionGrid(
+                            levels = availableDifficulties,
+                            selectedLevel = selectedDifficulty,
+                            onLevelSelected = { level ->
+                                selectedDifficulty = when (targetMode) {
+                                    is GameMode.BubbleMathBlitz -> ModeDifficulty.Bubble(level as BubbleMathDifficulty)
+                                    is GameMode.QuizGenius -> ModeDifficulty.Quiz(level as QuizDifficulty)
+                                }
+                            }
                         )
-                    }
-                }
-                // Step 3: Confirm Button
-                GradientButton(
-                    text = "Start ${mode.javaClass.simpleName}",
-                    enabled = selectedMode != null && selectedDifficulty != null,
-                    gradient = listOf(Color(0xFF00E676), Color(0xFF00B8D4)),
-                    onClick = {
-                        coroutineScope.launch {
-                            if (selectedMode != null && selectedDifficulty != null) {
-                                onConfirm(selectedMode!!, selectedDifficulty!!)
+
+                        // High Score display with smooth entrance
+                        AnimatedVisibility(
+                            visible = selectedDifficulty != null,
+                            enter = fadeIn(animationSpec = tween(300, delayMillis = 200)) +
+                                    expandVertically(animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)),
+                            exit = fadeOut(animationSpec = tween(200)) +
+                                    shrinkVertically(animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy))
+                        ) {
+                            selectedDifficulty?.let { diff ->
+                                val highScore = lastHighScoreProvider(targetMode, diff)
+                                if (highScore > 0) {
+                                    Column {
+                                        Spacer(modifier = Modifier.height(16.dp))
+                                        Surface(
+                                            shape = RoundedCornerShape(16.dp),
+                                            color = MaterialTheme.colorScheme.primaryContainer.copy(
+                                                alpha = 0.3f
+                                            ),
+                                            modifier = Modifier.padding(horizontal = 16.dp)
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(12.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Star,
+                                                    contentDescription = null,
+                                                    tint = Color(0xFFFFD700),
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                                Text(
+                                                    text = "Best Score: $highScore",
+                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                    fontWeight = FontWeight.Bold,
+                                                    style = MaterialTheme.typography.bodyMedium
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        // Action buttons with staggered animation
+                        AnimatedVisibility(
+                            visible = true,
+                            enter = fadeIn(animationSpec = tween(300, delayMillis = 300)) +
+                                    slideInVertically(
+                                        initialOffsetY = { it / 4 },
+                                        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
+                                    )
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Material3GradientButton(
+                                    text = "Start ${targetMode.name}",
+                                    enabled = selectedDifficulty != null,
+                                    gradient = listOf(
+                                        MaterialTheme.colorScheme.primary,
+                                        MaterialTheme.colorScheme.secondary
+                                    ),
+                                    onClick = {
+                                        coroutineScope.launch {
+                                            if (selectedDifficulty != null) {
+                                                onConfirm(targetMode, selectedDifficulty!!)
+                                            }
+                                        }
+                                    }
+                                )
+
+                                /*
+                                OutlinedButton(
+                                    onClick = {
+                                        selectedMode = null
+                                        selectedDifficulty = null
+                                    },
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = MaterialTheme.colorScheme.onSurface
+                                    ),
+                                    border = ButtonDefaults.outlinedButtonBorder().copy(
+                                        brush = Brush.linearGradient(
+                                            listOf(
+                                                MaterialTheme.colorScheme.outline,
+                                                MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                                            )
+                                        )
+                                    )
+                                ) {
+                                    Text("Back to Mode Selection")
+                                }
+                                 */
                             }
                         }
                     }
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                OutlinedButton(onClick = { selectedMode = null; selectedDifficulty = null }) {
-                    Text("Back to Mode Selection")
                 }
             }
         }
@@ -190,85 +361,127 @@ fun GameModeSelectionScreen(
 }
 
 @Composable
-fun NeuGameModeCard(
+fun Material3GameModeCard(
     mode: GameMode,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val elevation = if (isSelected) 16.dp else 8.dp
-    val cardGradient = listOf(Color(0xFF3A1C4A), Color(0xFF1A0F2E))
+    val haptics = LocalHapticFeedback.current
+    val scale by animateFloatAsState(
+        targetValue = if (isSelected) 1.05f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "cardScale"
+    )
 
     Card(
         modifier = Modifier
-            .width(200.dp)
-            .height(260.dp)
-            .neumorphicShadow(
-                blurRadius = elevation,
-                shape = RoundedCornerShape(24.dp),
-                lightColor = Color(0x44FFFFFF),
-                darkColor = Color(0x66000000)
-            )
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(24.dp),
+            .fillMaxWidth(0.9f)
+            .height(120.dp)
+            .scale(scale)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) {
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                onClick()
+            },
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) Color(0xFF2A1255) else Color(0xFF1A0A30)
+            containerColor = if (isSelected)
+                MaterialTheme.colorScheme.primaryContainer
+            else
+                MaterialTheme.colorScheme.surfaceVariant
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isSelected) 12.dp else 4.dp
         )
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    brush = Brush.linearGradient(
-                        colors = if (isSelected)
-                            listOf(Color(0xFF6A1B9A), Color(0xFF4527A0))
-                        else cardGradient
-                    )
-                )
-                .border(
-                    width = 2.dp,
-                    brush = Brush.linearGradient(
-                        colors = listOf(Color(0x66FFFFFF), Color(0x00FFFFFF))
-                    ),
-                    shape = RoundedCornerShape(24.dp)
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Image(
-                    painter = painterResource(
-                        id = if (mode is GameMode.BubbleMathBlitz)
-                            R.drawable.bubblemuscot else R.drawable.math_mascot
-                    ),
-                    contentDescription = mode.toString(),
-                    modifier = Modifier.size(120.dp)
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(
-                    text = mode.toString().replaceFirstChar { it.uppercase() },
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color.White,
-                    modifier = Modifier
-                        .background(
-                            brush = Brush.horizontalGradient(
-                                colors = listOf(Color(0xFF00E5FF), Color(0xFFAA00FF))
-                            ),
-                            shape = RoundedCornerShape(8.dp)
+                .then(
+                    if (isSelected) {
+                        Modifier.background(
+                            brush = Brush.linearGradient(
+                                colors = listOf(
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                    MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f)
+                                )
+                            )
                         )
-                        .padding(horizontal = 16.dp, vertical = 4.dp)
+                    } else Modifier
                 )
+                .padding(16.dp),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = if (isSelected)
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                    else
+                        MaterialTheme.colorScheme.surface,
+                    modifier = Modifier.size(70.dp)
+                ) {
+                    Image(
+                        painter = painterResource(
+                            id = when (mode) {
+                                is GameMode.BubbleMathBlitz -> R.drawable.bubblemuscot
+                                is GameMode.QuizGenius -> R.drawable.math_mascot
+                            }
+                        ),
+                        contentDescription = mode.name,
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = mode.name,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isSelected)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = when (mode) {
+                            is GameMode.BubbleMathBlitz -> "Fast-paced arithmetic challenges!"
+                            is GameMode.QuizGenius -> "Strategic quiz with diverse difficulties!"
+                        },
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 12.sp,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
 
-                Text(
-                    text = if (mode is GameMode.BubbleMathBlitz)
-                        "Fast-paced arithmetic!" else "Strategic challenges!",
-                    color = Color(0xFFCCCCCC),
-                    fontSize = 12.sp,
-                    modifier = Modifier.padding(horizontal = 12.dp)
-                )
+                if (isSelected) {
+                    Surface(
+                        shape = RoundedCornerShape(50),
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.CheckCircle,
+                            contentDescription = "Selected",
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.padding(4.dp)
+                        )
+                    }
+                }
             }
         }
     }
@@ -276,73 +489,126 @@ fun NeuGameModeCard(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun LevelSelectionGrid(
+fun Material3LevelSelectionGrid(
     levels: List<Any>,
     selectedLevel: Any?,
     onLevelSelected: (Any) -> Unit
 ) {
-    val colors = listOf(
-        Color(0xFF00C853), // Easy
-        Color(0xFFFFD600), // Medium
-        Color(0xFFFF3D00), // Hard
-        Color(0xFFD50000)  // Expert
+    val haptics = LocalHapticFeedback.current
+
+
+    val difficultyColors = listOf(
+        MaterialTheme.colorScheme.primary,        // Easy - Primary color
+        MaterialTheme.colorScheme.secondary,      // Medium - Secondary color
+        MaterialTheme.colorScheme.tertiary,       // Hard - Tertiary color
+        MaterialTheme.colorScheme.error           // Expert - Error color for danger
     )
 
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalArrangement = Arrangement.Center
+        horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         levels.forEachIndexed { index, level ->
-            val isSelected = selectedLevel == level
-            Box(
+            val isSelected = selectedLevel?.let { selected ->
+                when (selected) {
+                    is ModeDifficulty.Bubble -> selected.difficulty == level
+                    is ModeDifficulty.Quiz -> selected.difficulty == level
+                    else -> false
+                }
+            } ?: false
+
+            val levelColor = difficultyColors.getOrElse(index) { MaterialTheme.colorScheme.primary }
+            val scale by animateFloatAsState(
+                targetValue = if (isSelected) 1.1f else 1f,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessMedium
+                ),
+                label = "levelScale"
+            )
+
+            Surface(
                 modifier = Modifier
-                    .height(60.dp)
-                    .weight(1f)
-                    .padding(8.dp)
+                    .width(130.dp)
+                    .height(70.dp)
                     .neumorphicShadow(
-                        blurRadius = if (isSelected) 12.dp else 6.dp,
-                        shape = RoundedCornerShape(16.dp),
-                        lightColor = Color(0x44FFFFFF),
-                        darkColor = Color(0x66000000)
+                        offset = 4.dp,
+                        blurRadius = 12.dp,
+                        shape = RoundedCornerShape(20.dp),
+                        lightColor = MaterialTheme.colorScheme.primary,
+                        darkColor = MaterialTheme.colorScheme.secondary,
+                        inverted = isSelected
                     )
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = if (isSelected)
-                                listOf(colors[index], colors[index].copy(alpha = 0.8f))
-                            else listOf(Color(0x22FFFFFF), Color(0x11FFFFFF))
-                        ),
-                        shape = RoundedCornerShape(16.dp)
-                    )
-                    .border(
-                        width = 1.dp,
-                        brush = Brush.linearGradient(
-                            colors = listOf(Color(0x44FFFFFF), Color(0x00FFFFFF))
-                        ),
-                        shape = RoundedCornerShape(16.dp)
-                    )
-                    .clickable { onLevelSelected(level) },
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = when (level) {
-                        is BubbleMathDifficulty -> level.name
-                        is QuizDifficulty -> level.name
-                        else -> "Unknown"
+                    .graphicsLayer(scaleX = scale, scaleY = scale)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onLevelSelected(level)
                     },
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
-                    letterSpacing = 1.2.sp,
-                    textAlign = TextAlign.Center,
-                    overflow = TextOverflow.Visible
-                )
+                shape = RoundedCornerShape(20.dp),
+                color = if (isSelected) levelColor else MaterialTheme.colorScheme.surfaceVariant,
+                tonalElevation = if (isSelected) 8.dp else 2.dp,
+                shadowElevation = if (isSelected) 12.dp else 4.dp
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .then(
+                            if (isSelected) {
+                                Modifier.background(
+                                    brush = Brush.radialGradient(
+                                        colors = listOf(
+                                            levelColor.copy(alpha = 0.8f),
+                                            levelColor
+                                        )
+                                    )
+                                )
+                            } else {
+                                Modifier.background(MaterialTheme.colorScheme.surfaceVariant)
+                            }
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = when (level) {
+                                is BubbleMathDifficulty -> level.name
+                                is QuizDifficulty -> level.name
+                                else -> "Unknown"
+                            },
+                            color = if (isSelected)
+                                MaterialTheme.colorScheme.onPrimary
+                            else
+                                MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Bold,
+                            fontSize = 14.sp,
+                            letterSpacing = 0.5.sp,
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.labelLarge
+                        )
+
+                        if (isSelected) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Icon(
+                                imageVector = Icons.Filled.CheckCircle,
+                                contentDescription = "Selected",
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
             }
         }
     }
 }
 
-// Neon Text Component
 @Composable
 fun NeonText(
     text: String,
@@ -352,126 +618,109 @@ fun NeonText(
 ) {
     val brush = remember { Brush.linearGradient(colors = gradient) }
 
-    Box(modifier = modifier) {
-        Text(
-            text = text,
-            fontSize = fontSize,
-            fontWeight = FontWeight.ExtraBold,
-            color = Color.Transparent,
-            style = MaterialTheme.typography.headlineMedium.copy(
-                shadow = Shadow(
-                    color = gradient.first().copy(alpha = 0.5f),
-                    offset = Offset(2f, 2f),
-                    blurRadius = 12f
-                )
+    Text(
+        text = text,
+        fontSize = fontSize,
+        fontWeight = FontWeight.ExtraBold,
+        textAlign = TextAlign.Center,
+        modifier = modifier,
+        style = MaterialTheme.typography.headlineMedium.copy(
+            brush = brush,
+            shadow = Shadow(
+                color = gradient.first().copy(alpha = 0.5f),
+                offset = Offset(2f, 2f),
+                blurRadius = 12f
             )
         )
-        Text(
-            text = text,
-            fontSize = fontSize,
-            fontWeight = FontWeight.ExtraBold,
-            style = MaterialTheme.typography.headlineMedium,
-            color = Color.White
-        )
-        Text(
-            text = text,
-            fontSize = fontSize,
-            fontWeight = FontWeight.ExtraBold,
-            style = MaterialTheme.typography.headlineMedium.copy(brush = brush)
-        )
-    }
+    )
 }
 
-// Gradient Button Component
 @Composable
-fun GradientButton(
+fun Material3GradientButton(
     modifier: Modifier = Modifier,
     text: String,
     gradient: List<Color>,
     enabled: Boolean = true,
     onClick: () -> Unit
 ) {
-    val buttonGradient = if (enabled) gradient else listOf(Color(0xFF666666), Color(0xFF444444))
-    val elevation = if (enabled) 8.dp else 0.dp
+    val haptics = LocalHapticFeedback.current
+    val scale by animateFloatAsState(
+        targetValue = if (enabled) 1f else 0.95f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "buttonScale"
+    )
 
-    Button(
-        onClick = onClick,
-        enabled = enabled,
+    Surface(
+        onClick = {
+            if (enabled) {
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                onClick()
+            }
+        },
         modifier = modifier
-            .neumorphicShadow(blurRadius = elevation),
+            .scale(scale)
+            .clip(RoundedCornerShape(16.dp)),
+        enabled = enabled,
         shape = RoundedCornerShape(16.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
+        color = Color.Transparent,
+        shadowElevation = if (enabled) 8.dp else 0.dp
     ) {
         Box(
             modifier = Modifier
                 .background(
-                    brush = Brush.linearGradient(buttonGradient),
-                    shape = RoundedCornerShape(16.dp)
-                )
-                .border(
-                    width = 2.dp,
-                    brush = Brush.linearGradient(
-                        listOf(
-                            Color.White.copy(alpha = 0.2f),
-                            MaterialTheme.colorScheme.background
+                    brush = if (enabled)
+                        Brush.linearGradient(gradient)
+                    else
+                        Brush.linearGradient(
+                            listOf(
+                                MaterialTheme.colorScheme.surfaceVariant,
+                                MaterialTheme.colorScheme.surfaceVariant
+                            )
                         )
-                    ),
-                    shape = RoundedCornerShape(16.dp)
-                ),
+                )
+                .padding(horizontal = 32.dp, vertical = 16.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = text,
-                color = Color.White,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Black,
-                letterSpacing = 1.2.sp,
-                modifier = Modifier.padding(16.dp)
+                color = if (enabled)
+                    MaterialTheme.colorScheme.onPrimary
+                else
+                    MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.5.sp,
+                style = MaterialTheme.typography.labelLarge
             )
         }
     }
 }
 
-// Neumorphic Section Title
 @Composable
-fun NeuSectionTitle(text: String) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
+fun MaterialSectionTitle(text: String) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
         modifier = Modifier.fillMaxWidth()
     ) {
-        HorizontalDivider(
-            modifier = Modifier
-                .weight(1f)
-                .neumorphicShadow(
-                    blurRadius = 4.dp,
-                    shape = RectangleShape,
-                    inverted = true
-                ),
-            color = Color(0x22FFFFFF),
-            thickness = 1.dp
-        )
         Text(
             text = text,
-            color = Color(0xFF00E5FF),
-            modifier = Modifier.padding(horizontal = 16.dp),
-            fontSize = 16.sp,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(16.dp),
+            fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
-            letterSpacing = 1.1.sp
-        )
-        HorizontalDivider(
-            modifier = Modifier
-                .weight(1f)
-                .neumorphicShadow(
-                    blurRadius = 4.dp,
-                    shape = RectangleShape,
-                    inverted = true
-                ),
-            color = Color(0x22FFFFFF),
-            thickness = 1.dp
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.titleMedium
         )
     }
 }
 
+
+private val GameMode.name: String
+    get() = when (this) {
+        is GameMode.BubbleMathBlitz -> "Bubble Blitz"
+        is GameMode.QuizGenius -> "Quiz Genius"
+    }
 
 @PreviewScreenSizes
 @Composable

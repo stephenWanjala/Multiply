@@ -20,7 +20,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawOutline
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -33,31 +35,47 @@ fun Modifier.neumorphicShadow(
     darkColor: Color = Color.Black.copy(alpha = 0.2f),
     inverted: Boolean = false
 ): Modifier =
-    this.then(
-        Modifier.drawBehind {
-            val shadowOffset = offset.toPx()
-            val shadowBlur = blurRadius.toPx()
-            val alpha = (shadowBlur / 100f).coerceIn(0f, 1f)
+    composed {
+        // We use drawWithCache for better performance as it caches the outline
+        // when the size or shape remains the same.
+        Modifier.drawWithCache {
+            val shadowOffsetPx = offset.toPx()
+            val shadowBlurPx = blurRadius.toPx()
+
+            // For a "soft" shadow, we don't draw with Stroke directly on the outline.
+            // Instead, we translate the drawing area and draw the outline itself.
+            // The blurring effect is typically handled by RenderEffect (requires API 31+)
+            // or by drawing multiple slightly offset, transparent layers.
+            // For a simpler, cross-API neumorphic look, we'll draw the solid shape
+            // with an offset and rely on the alpha for the "blur" feel without actual blur.
+
             val outline = shape.createOutline(size, layoutDirection, this)
 
-            fun drawShadow(color: Color, offset: Offset) {
-                drawOutline(
-                    outline = outline,
-                    color = color.copy(alpha = alpha),
-                    style = Stroke(width = shadowBlur),
-//                    topLeft = offset
-                )
-            }
+            onDrawBehind {
+                val lightOffset = if (inverted) Offset(shadowOffsetPx, shadowOffsetPx) else Offset(-shadowOffsetPx, -shadowOffsetPx)
+                val darkOffset = if (inverted) Offset(-shadowOffsetPx, -shadowOffsetPx) else Offset(shadowOffsetPx, shadowOffsetPx)
 
-            if (inverted) {
-                drawShadow(darkColor, Offset(shadowOffset, shadowOffset))
-                drawShadow(lightColor, Offset(-shadowOffset, -shadowOffset))
-            } else {
-                drawShadow(lightColor, Offset(-shadowOffset, -shadowOffset))
-                drawShadow(darkColor, Offset(shadowOffset, shadowOffset))
+                // Draw dark shadow
+                translate(left = darkOffset.x, top = darkOffset.y) {
+                    drawOutline(
+                        outline = outline,
+                        color = darkColor,
+                        alpha = darkColor.alpha // Use the alpha directly from the color
+                    )
+                }
+
+                // Draw light shadow
+                translate(left = lightOffset.x, top = lightOffset.y) {
+                    drawOutline(
+                        outline = outline,
+                        color = lightColor,
+                        alpha = lightColor.alpha // Use the alpha directly from the color
+                    )
+                }
             }
         }
-    )
+    }
+
 
 // Background Effects
 @Composable
