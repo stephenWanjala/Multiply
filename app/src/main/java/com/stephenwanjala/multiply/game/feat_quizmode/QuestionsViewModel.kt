@@ -98,12 +98,10 @@ class QuestionsViewModel @Inject constructor(
                     isCorrect = state.value.selectedAnswers[index] == question.answer
                 )
             }
-            _state.update { it.copy(results = results) }
-            // Handle navigation to results screen
+            _state.update { it.copy(results = results, showRecap = true) }
         }
     }
 }
-
 
 data class QuestionsState(
     val currentQuestion: MathQuestion? = null,
@@ -113,10 +111,11 @@ data class QuestionsState(
     val nextButtonEnabled: Boolean = false,
     val showPreviousButton: Boolean = false,
     val showDoneButton: Boolean = false,
-    val currentQuestionIndex:Int =0,
+    val currentQuestionIndex: Int = 0,
     val selectedAnswers: Map<Int, Int> = emptyMap(),
-    val selectedAnswer: Int? = null
-    )
+    val selectedAnswer: Int? = null,
+    val showRecap: Boolean = false
+)
 
 data class GameResult(
     val question: String,
