@@ -76,6 +76,10 @@ import com.stephenwanjala.multiply.game.components.neumorphicShadow
 fun QuestionsScreen(viewModel: QuestionsViewModel, onClosePressed: () -> Unit) {
     val state = viewModel.state.collectAsStateWithLifecycle().value
 
+    if (state.showRecap) {
+        RecapScreen(results = state.results, onClosePressed = onClosePressed)
+        return
+    }
     Surface(color = MaterialTheme.colorScheme.background) {
         Scaffold(
             topBar = {
@@ -424,34 +428,28 @@ fun QuestionBottomBar(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RecapScreen(viewModel: QuestionsViewModel) {
-    Surface(
-        color = MaterialTheme.colorScheme.background,
-        modifier = Modifier
-            .fillMaxSize()
-            .glowingOrbs()
-    ) {
-        Scaffold(topBar = {
-            TopAppBar(title = { Text(text = "Recap ") }, actions = {
-                IconButton(onClick = { /*TODO*/ }) {
-                    Icon(imageVector = Icons.Default.Close, contentDescription = "Close")
-                }
-            })
-        }) { paddingValues ->
-            LazyColumn(
-                contentPadding = paddingValues
-            ) {
-//                itemsIndexed(gameResults) { index, result ->
-//                    QuestionRecapItem(questionNumber = index + 1, result = result)
-//                    Spacer(modifier = Modifier.height(8.dp))
-//                }
+fun RecapScreen(results: List<GameResult>, onClosePressed: () -> Unit) {
+    Surface(color = MaterialTheme.colorScheme.background) {
+        Scaffold(
+            topBar = {
+                TopAppBar(title = { Text("Quiz Recap", fontWeight = FontWeight.Bold) }, actions = {
+                    Button(onClick = onClosePressed) {
+                        Text("Home")
+                    }
+                })
             }
-
+        ) { padding ->
+            LazyColumn(modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()) {
+                itemsIndexed(results) { index, result ->
+                    QuestionRecapItem(questionNumber = index + 1, result = result)
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
         }
     }
-
 }
-
 
 @Composable
 fun AnswerRow(answer: Int, isUserAnswer: Boolean, isCorrect: Boolean) {
