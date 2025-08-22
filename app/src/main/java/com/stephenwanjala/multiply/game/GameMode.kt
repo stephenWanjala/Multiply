@@ -24,11 +24,13 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,17 +54,28 @@ import com.stephenwanjala.multiply.game.components.neumorphicShadow
 import com.stephenwanjala.multiply.game.components.repeatLiquidBackground
 import com.stephenwanjala.multiply.game.models.BubbleMathDifficulty
 import com.stephenwanjala.multiply.game.models.GameMode
+import com.stephenwanjala.multiply.game.models.ModeDifficulty
 import com.stephenwanjala.multiply.game.models.QuizDifficulty
 import com.stephenwanjala.multiply.ui.theme.MultiplyTheme
+import kotlinx.coroutines.launch
 
 @Composable
-fun GameModeSelectionScreen(onConfirm: (GameMode) -> Unit) {
+fun GameModeSelectionScreen(
+    onConfirm: (GameMode, ModeDifficulty) -> Unit,
+    lastHighScoreProvider: (GameMode, ModeDifficulty) -> Int = { _, _ -> 0 }
+) {
+    val coroutineScope = rememberCoroutineScope()
     var selectedMode by remember { mutableStateOf<GameMode?>(null) }
-    var selectedDifficulty by remember { mutableStateOf<Any?>(null) }
+    var selectedDifficulty by remember { mutableStateOf<ModeDifficulty?>(null) }
 
-    val gameModes = mapOf(
-        "Bubble Math Blitz" to BubbleMathDifficulty.entries,
-        "Quiz Genius" to QuizDifficulty.entries
+    val modes = listOf(
+        GameMode.BubbleMathBlitz(BubbleMathDifficulty.EASY),
+        GameMode.QuizGenius(QuizDifficulty.BEGINNER)
+    )
+
+    val difficultiesMap = mapOf(
+        GameMode.BubbleMathBlitz(BubbleMathDifficulty.EASY)::class to BubbleMathDifficulty.entries,
+        GameMode.QuizGenius(QuizDifficulty.BEGINNER)::class to QuizDifficulty.entries
     )
 
     Box(
@@ -108,75 +121,80 @@ fun GameModeSelectionScreen(onConfirm: (GameMode) -> Unit) {
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Game Mode Cards
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                gameModes.keys.forEach { modeName ->
-                    NeuGameModeCard(
-                        mode = modeName,
-                        isSelected = selectedMode?.let {
-                            when (it) {
-                                is GameMode.BubbleMathBlitz -> modeName == "Bubble Math Blitz"
-                                is GameMode.QuizGenius -> modeName == "Quiz Genius"
-                            }
-                        } ?: false,
-                        onClick = {
-                            selectedMode = when (modeName) {
-                                "Bubble Math Blitz" -> GameMode.BubbleMathBlitz(BubbleMathDifficulty.EASY)
-                                "Quiz Genius" -> GameMode.QuizGenius(QuizDifficulty.BEGINNER)
-                                else -> null
-                            }
-                            selectedDifficulty = null // Reset difficulty when mode changes
-                        }
-                    )
+            // Step 1: GameMode selection
+            if (selectedMode == null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    modes.forEach { modeOption ->
+                        NeuGameModeCard(
+                            mode = modeOption,
+                            isSelected = selectedMode == modeOption,
+                            onClick = { selectedMode = modeOption; selectedDifficulty = null }
+                        )
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Difficulty Selection
+            // Step 2: Difficulty selection
             selectedMode?.let { mode ->
-                val levels = when (mode) {
-                    is GameMode.BubbleMathBlitz -> gameModes["Bubble Math Blitz"]!!
-                    is GameMode.QuizGenius -> gameModes["Quiz Genius"]!!
+                val availableDifficulties = when (mode) {
+                    is GameMode.BubbleMathBlitz -> BubbleMathDifficulty.entries
+                    is GameMode.QuizGenius -> QuizDifficulty.entries
                 }
-
-                NeuSectionTitle(text = "DIFFICULTY LEVEL")
-
+                Spacer(modifier = Modifier.height(32.dp))
+                Text(text = "Choose Difficulty:", fontWeight = FontWeight.Bold)
                 LevelSelectionGrid(
-                    levels = levels,
+                    levels = availableDifficulties,
                     selectedLevel = selectedDifficulty,
                     onLevelSelected = { level ->
-                        selectedDifficulty = level
-                        selectedMode = when (mode) {
-                            is GameMode.BubbleMathBlitz -> GameMode.BubbleMathBlitz(level as BubbleMathDifficulty)
-                            is GameMode.QuizGenius -> GameMode.QuizGenius(level as QuizDifficulty)
+                        selectedDifficulty = when (mode) {
+                            is GameMode.BubbleMathBlitz -> ModeDifficulty.Bubble(level as BubbleMathDifficulty)
+                            is GameMode.QuizGenius -> ModeDifficulty.Quiz(level as QuizDifficulty)
                         }
                     }
                 )
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Confirm Button
-            GradientButton(
-                text = "START QUEST",
-                enabled = selectedMode != null,
-                gradient = listOf(Color(0xFF00E676), Color(0xFF00B8D4)),
-                onClick = {
-                    selectedMode?.let {
-                        onConfirm(it)
-                        println("The Game Mode $it")
+                Spacer(modifier = Modifier.height(16.dp))
+                // Show contextual high score
+                selectedDifficulty?.let { diff ->
+                    val highScore = lastHighScoreProvider(mode, diff)
+                    if (highScore > 0) {
+                        Text(
+                            text = "Best Score: $highScore",
+                            color = Color.Yellow,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
-            )
+                // Step 3: Confirm Button
+                GradientButton(
+                    text = "Start ${mode.javaClass.simpleName}",
+                    enabled = selectedMode != null && selectedDifficulty != null,
+                    gradient = listOf(Color(0xFF00E676), Color(0xFF00B8D4)),
+                    onClick = {
+                        coroutineScope.launch {
+                            if (selectedMode != null && selectedDifficulty != null) {
+                                onConfirm(selectedMode!!, selectedDifficulty!!)
+                            }
+                        }
+                    }
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedButton(onClick = { selectedMode = null; selectedDifficulty = null }) {
+                    Text("Back to Mode Selection")
+                }
+            }
         }
     }
 }
 
 @Composable
-fun NeuGameModeCard(mode: String, isSelected: Boolean, onClick: () -> Unit) {
+fun NeuGameModeCard(
+    mode: GameMode,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
     val elevation = if (isSelected) 16.dp else 8.dp
     val cardGradient = listOf(Color(0xFF3A1C4A), Color(0xFF1A0F2E))
 
@@ -218,17 +236,17 @@ fun NeuGameModeCard(mode: String, isSelected: Boolean, onClick: () -> Unit) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Image(
                     painter = painterResource(
-                        id = if (mode == "Bubble Math Blitz")
+                        id = if (mode is GameMode.BubbleMathBlitz)
                             R.drawable.bubblemuscot else R.drawable.math_mascot
                     ),
-                    contentDescription = mode,
+                    contentDescription = mode.toString(),
                     modifier = Modifier.size(120.dp)
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = mode.uppercase(),
+                    text = mode.toString().replaceFirstChar { it.uppercase() },
                     fontSize = 18.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.White,
@@ -245,7 +263,7 @@ fun NeuGameModeCard(mode: String, isSelected: Boolean, onClick: () -> Unit) {
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = if (mode == "Bubble Math Blitz")
+                    text = if (mode is GameMode.BubbleMathBlitz)
                         "Fast-paced arithmetic!" else "Strategic challenges!",
                     color = Color(0xFFCCCCCC),
                     fontSize = 12.sp,
@@ -459,7 +477,6 @@ fun NeuSectionTitle(text: String) {
 @Composable
 private fun PreviewGameModes() {
     MultiplyTheme {
-        GameModeSelectionScreen(onConfirm = { _ -> })
+        GameModeSelectionScreen(onConfirm = { _, _ -> })
     }
 }
-
