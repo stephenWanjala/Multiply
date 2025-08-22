@@ -10,12 +10,12 @@ plugins {
 
 android {
     namespace = "com.stephenwanjala.multiply"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.stephenwanjala.multiply"
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
@@ -58,6 +58,7 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     testImplementation(libs.junit)
+    testImplementation(libs.testng)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
@@ -73,5 +74,9 @@ dependencies {
     implementation(libs.kotlin.serialization.kotlinx.json)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.compose.material.icons.extended)
+
+    // https://mvnrepository.com/artifact/org.jetbrains.kotlin/kotlin-test
+    implementation(libs.kotlin.test)
+
 }
 

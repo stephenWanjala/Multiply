@@ -34,7 +34,7 @@ an incorrect answer, they lose a life.
   Clone the repository:
 
 ```bash
-git https://github.com/stephenWanjala/Multiply.git
+git clone https://github.com/stephenWanjala/Multiply.git
 ```
 
 <p>Open the project in Android Studio.</p>
@@ -43,9 +43,9 @@ Build and run the app on your Android device or emulator.
 
 ## Screenshots
 
-| Welcome Screen                      | Game Instructions                            | GamePlay                        | GamePlay   GameOver                  | Game Settings                  |
-|-------------------------------------|----------------------------------------------|---------------------------------|--------------------------------------|--------------------------------|
-| ![welcome Screen](docs/welcome.gif) | ![Game Instructions ](docs/instructions.gif) | ![gameplay ](docs/gameplay.gif) | ![GameOver](docs/samplegameover.gif) | ![Settings](docs/settings.png) |
+| Game Mode Selection                       | Welcome Screen                      | Game Instructions                           | GamePlay                       | GameOver                             | Game Settings                  |
+|-------------------------------------------|-------------------------------------|---------------------------------------------|--------------------------------|--------------------------------------|--------------------------------|
+| ![Game Mode Selection](docs/gamemode.gif) | ![Welcome Screen](docs/welcome.gif) | ![Game Instructions](docs/instructions.gif) | ![GamePlay](docs/gameplay.gif) | ![GameOver](docs/samplegameover.gif) | ![Settings](docs/settings.png) |
 
 ##### Acknowledgments
 

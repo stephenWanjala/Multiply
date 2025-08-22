@@ -1,4 +1,4 @@
-package com.stephenwanjala.multiply.game.screens
+package com.stephenwanjala.multiply.game.feat_bubblemode
 
 import androidx.compose.animation.core.EaseInOutQuad
 import androidx.compose.animation.core.EaseOutBounce
@@ -11,15 +11,23 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowColumn
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,12 +49,13 @@ import com.stephenwanjala.multiply.R
 import com.stephenwanjala.multiply.game.components.animatedBackground
 import com.stephenwanjala.multiply.ui.theme.MultiplyTheme
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun WelcomeScreen(
     onPlayClick: () -> Unit,
     onHowToPlayClick: () -> Unit,
-    onSettingsClick: () -> Unit
+    onSettingsClick: () -> Unit,
+    onNavigateUp: () -> Unit
 ) {
     Surface(
         modifier = Modifier
@@ -61,50 +70,66 @@ fun WelcomeScreen(
                 )
             )
     ) {
-        FlowColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .animatedBackground(),
-            verticalArrangement = Arrangement.SpaceEvenly,
-            horizontalArrangement = Arrangement.Absolute.Center
-        ) {
-            // Animated logo
-            AnimatedLogo()
-
-            // Mascot
-            Image(
-                painter = painterResource(id = R.drawable.math_mascot),
-                contentDescription = "Math Mascot",
-                modifier = Modifier.size(200.dp)
-            )
-
-            // Buttons
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(bottom = 32.dp)
-            ) {
-                PulsatingButton(
-                    onClick = onPlayClick,
-                    text = "Play!",
-                    color = Color(0xFF4CAF50),
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(
-                    onClick = onHowToPlayClick,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000)),
-                    shape = MaterialTheme.shapes.medium
-                ) {
-                    Text("How to Play", fontSize = 18.sp)
+        Scaffold(modifier = Modifier.fillMaxSize(), topBar = {
+            TopAppBar(title = {
+                Text(text = "Falling Bubble", fontWeight = FontWeight.Bold)
+            }, navigationIcon = {
+                IconButton(onClick = onNavigateUp) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Default.ArrowBack,
+                        contentDescription = "Go Back"
+                    )
                 }
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(
-                    onClick = onSettingsClick,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7C4DFF)),
-                    shape = MaterialTheme.shapes.medium
+            })
+        }) { paddingValues ->
+            FlowColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .consumeWindowInsets(paddingValues)
+                    .animatedBackground(),
+                verticalArrangement = Arrangement.SpaceEvenly,
+                horizontalArrangement = Arrangement.Absolute.Center
+            ) {
+                // Animated logo
+                AnimatedLogo()
+
+                // Mascot
+                Image(
+                    painter = painterResource(id = R.drawable.math_mascot),
+                    contentDescription = "Math Mascot",
+                    modifier = Modifier.size(200.dp)
+                )
+
+                // Buttons
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(bottom = 32.dp)
                 ) {
-                    Text("Settings", fontSize = 18.sp)
+                    PulsatingButton(
+                        onClick = onPlayClick,
+                        text = "Play!",
+                        color = Color(0xFF4CAF50),
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = onHowToPlayClick,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000)),
+                        shape = MaterialTheme.shapes.medium
+                    ) {
+                        Text("How to Play", fontSize = 18.sp)
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = onSettingsClick,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7C4DFF)),
+                        shape = MaterialTheme.shapes.medium
+                    ) {
+                        Text("Settings", fontSize = 18.sp)
+                    }
                 }
             }
+
         }
     }
 }
@@ -176,6 +201,6 @@ fun PulsatingButton(onClick: () -> Unit, text: String, color: Color) {
 @Composable
 private fun PreviewWelcomeScreen() {
     MultiplyTheme {
-        WelcomeScreen(onSettingsClick = {}, onPlayClick = {}, onHowToPlayClick = {})
+        WelcomeScreen(onSettingsClick = {}, onPlayClick = {}, onHowToPlayClick = {}, onNavigateUp = {})
     }
 }
