@@ -20,6 +20,8 @@ import com.stephenwanjala.multiply.game.feat_bubblemode.GameViewModel
 import com.stephenwanjala.multiply.game.feat_quizmode.QuestionAction
 import com.stephenwanjala.multiply.game.feat_quizmode.QuestionsScreen
 import com.stephenwanjala.multiply.game.feat_quizmode.QuestionsViewModel
+import com.stephenwanjala.multiply.game.models.ModeDifficulty
+import com.stephenwanjala.multiply.game.models.QuizDifficulty
 import kotlinx.serialization.Serializable
 
 @Composable
@@ -36,38 +38,38 @@ fun MultiplyNav(
         modifier = modifier
     ) {
         composable<MultiplyDestination.SelectGameMode> {
-            GameModeSelectionScreen { gameMode: GameMode ->
-                when (gameMode) {
-                    is GameMode.BubbleMathBlitz -> {
-                        when (gameMode.difficulty) {
-                            BubbleMathDifficulty.EASY -> viewModel.onAction(
-                                GameAction.UpdateDifficulty(
-                                    difficulty = Difficulty.EASY
+            GameModeSelectionScreen(
+                onConfirm = { gameMode, modeDifficulty ->
+                    when (gameMode) {
+                        is GameMode.BubbleMathBlitz -> {
+                            val diff = when (modeDifficulty) {
+                                is ModeDifficulty.Bubble -> modeDifficulty.difficulty
+                                else -> BubbleMathDifficulty.EASY // fallback, should not happen
+                            }
+                            when (diff) {
+                                BubbleMathDifficulty.EASY -> viewModel.onAction(
+                                    GameAction.UpdateDifficulty(Difficulty.EASY)
                                 )
-                            )
-
-                            BubbleMathDifficulty.MEDIUM -> viewModel.onAction(
-                                GameAction.UpdateDifficulty(
-                                    difficulty = Difficulty.MEDIUM
+                                BubbleMathDifficulty.MEDIUM -> viewModel.onAction(
+                                    GameAction.UpdateDifficulty(Difficulty.MEDIUM)
                                 )
-                            )
-
-                            BubbleMathDifficulty.HARD -> viewModel.onAction(
-                                GameAction.UpdateDifficulty(
-                                    difficulty = Difficulty.HARD
+                                BubbleMathDifficulty.HARD -> viewModel.onAction(
+                                    GameAction.UpdateDifficulty(Difficulty.HARD)
                                 )
-                            )
+                            }
+                            navHostController.navigate(MultiplyDestination.WelComeDestination)
                         }
-                        navHostController.navigate(MultiplyDestination.WelComeDestination)
-                    }
-
-                    is GameMode.QuizGenius -> {
-                        questionsVm.onAction(QuestionAction.UpdateLevel(gameMode.difficulty))
-                        navHostController.navigate(MultiplyDestination.QuestionsDestination)
+                        is GameMode.QuizGenius -> {
+                            val diff = when (modeDifficulty) {
+                                is ModeDifficulty.Quiz -> modeDifficulty.difficulty
+                                else -> QuizDifficulty.BEGINNER
+                            }
+                            questionsVm.onAction(QuestionAction.UpdateLevel(diff))
+                            navHostController.navigate(MultiplyDestination.QuestionsDestination)
+                        }
                     }
                 }
-
-            }
+            )
         }
         composable<MultiplyDestination.QuestionsDestination> {
             QuestionsScreen(viewModel=questionsVm, onClosePressed = navHostController::navigateUp)
