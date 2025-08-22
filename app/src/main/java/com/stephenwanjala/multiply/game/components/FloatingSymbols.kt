@@ -15,15 +15,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.sp
-import com.stephenwanjala.multiply.game.utlis.randomOffset
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.random.Random
@@ -49,8 +48,10 @@ private data class FloatingSymbolData(
     val rotationSeed: Float,
     val animationDelayMillis: Long
 )
+
 @Composable
 fun FloatingSymbols() {
+    val scope = rememberCoroutineScope()
     val symbols = listOf("+", "-", "×", "÷", "=")
     val numSymbols = 20
 
@@ -94,7 +95,7 @@ fun FloatingSymbols() {
         // Update positions using a single LaunchedEffect for all symbols
         LaunchedEffect(floatingSymbols) {
             floatingSymbols.forEach { symbolData ->
-                launch {
+                scope.launch {
                     while (true) {
                         delay(symbolData.animationDelayMillis)
                         symbolData.currentOffset = randomOffsetGenerator()

@@ -5,7 +5,7 @@ import com.stephenwanjala.multiply.game.models.QuizDifficulty
 import kotlin.math.pow
 import kotlin.random.Random
 
-private val random = Random.Default // Use a single Random instance
+private val random = Random.Default
 
 fun generateQuestions(difficulty: QuizDifficulty): List<MathQuestion> {
     return List(difficulty.questionCount) { generateQuestion(difficulty) }

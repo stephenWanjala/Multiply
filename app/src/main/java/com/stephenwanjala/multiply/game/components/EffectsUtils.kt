@@ -1,28 +1,19 @@
 package com.stephenwanjala.multiply.game.components
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawOutline
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -40,7 +31,7 @@ fun Modifier.neumorphicShadow(
         // when the size or shape remains the same.
         Modifier.drawWithCache {
             val shadowOffsetPx = offset.toPx()
-            val shadowBlurPx = blurRadius.toPx()
+            blurRadius.toPx()
 
             // For a "soft" shadow, we don't draw with Stroke directly on the outline.
             // Instead, we translate the drawing area and draw the outline itself.
@@ -52,15 +43,21 @@ fun Modifier.neumorphicShadow(
             val outline = shape.createOutline(size, layoutDirection, this)
 
             onDrawBehind {
-                val lightOffset = if (inverted) Offset(shadowOffsetPx, shadowOffsetPx) else Offset(-shadowOffsetPx, -shadowOffsetPx)
-                val darkOffset = if (inverted) Offset(-shadowOffsetPx, -shadowOffsetPx) else Offset(shadowOffsetPx, shadowOffsetPx)
+                val lightOffset = if (inverted) Offset(
+                    shadowOffsetPx,
+                    shadowOffsetPx
+                ) else Offset(-shadowOffsetPx, -shadowOffsetPx)
+                val darkOffset = if (inverted) Offset(-shadowOffsetPx, -shadowOffsetPx) else Offset(
+                    shadowOffsetPx,
+                    shadowOffsetPx
+                )
 
                 // Draw dark shadow
                 translate(left = darkOffset.x, top = darkOffset.y) {
                     drawOutline(
                         outline = outline,
                         color = darkColor,
-                        alpha = darkColor.alpha // Use the alpha directly from the color
+                        alpha = darkColor.alpha
                     )
                 }
 
@@ -69,7 +66,7 @@ fun Modifier.neumorphicShadow(
                     drawOutline(
                         outline = outline,
                         color = lightColor,
-                        alpha = lightColor.alpha // Use the alpha directly from the color
+                        alpha = lightColor.alpha
                     )
                 }
             }

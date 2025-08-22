@@ -1,27 +1,36 @@
 package com.stephenwanjala.multiply.game.feat_bubblemode
 
-import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -29,188 +38,266 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTopAppBarState
+import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.stephenwanjala.multiply.R
-import com.stephenwanjala.multiply.game.utlis.randomOffset
 import com.stephenwanjala.multiply.ui.theme.MultiplyTheme
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 import kotlin.random.Random
+
+
+val BubbleFont = FontFamily.Monospace
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InstructionsScreen(onStartGame: () -> Unit, navigateUp: () -> Unit) {
     val scrollState = rememberScrollState()
-    var startButtonScale by remember { mutableFloatStateOf(1f) }
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
-    Scaffold(topBar = {
-        TopAppBar(title = {
-            Text(
-                text = "Game Instructions",
-                fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.headlineMedium
-            )
-        }, navigationIcon = {
-            IconButton(onClick = navigateUp) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Default.ArrowBack,
-                    contentDescription = "Navigate Up"
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
+    val scope = rememberCoroutineScope()
+
+    Scaffold(
+        modifier = Modifier
+            .fillMaxSize()
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        text = "Game Instructions",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Black,
+                        fontFamily = BubbleFont,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = navigateUp) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Default.ArrowBack,
+                            contentDescription = "Navigate Up",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                },
+                scrollBehavior = scrollBehavior,
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp),
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp)
                 )
-            }
-        }, scrollBehavior = scrollBehavior)
-    }) { paddingValues ->
+            )
+        },
+        contentWindowInsets = WindowInsets.statusBars
+    ) { paddingValues ->
 
         Surface(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues = paddingValues),
+                .padding(paddingValues),
             color = MaterialTheme.colorScheme.background
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 // Animated background
-                AnimatedBackground()
+                AnimatedFloatingSymbolsBackground()
 
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(16.dp),
+                        .verticalScroll(scrollState)
+                        .padding(horizontal = 16.dp, vertical = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Mascot
                     Image(
                         painter = painterResource(id = R.drawable.math_mascot),
                         contentDescription = "Math Mascot",
                         modifier = Modifier
-                            .size(150.dp)
+                            .size(180.dp)
                             .padding(bottom = 16.dp)
+                            .clip(CircleShape)
+                            .background(
+                                MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
+                            )
+                            .padding(8.dp)
+                            .graphicsLayer {
+                                // Add a subtle breathing animation
+                                val scaleAnimatable = Animatable(1f)
+                                scope.launch {
+                                    scaleAnimatable.animateTo(
+                                        targetValue = 1.05f,
+                                        animationSpec = infiniteRepeatable(
+                                            animation = tween(
+                                                durationMillis = 1500,
+                                                easing = LinearEasing
+                                            ),
+                                            repeatMode = RepeatMode.Reverse
+                                        )
+                                    )
+                                }
+                                scaleX = scaleAnimatable.value
+                                scaleY = scaleAnimatable.value
+                            }
                     )
 
                     Text(
                         text = "Math Adventure!",
-                        style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF4CAF50),
-                        modifier = Modifier.padding(bottom = 24.dp)
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontFamily = BubbleFont,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(bottom = 24.dp),
+                        textAlign = TextAlign.Center
                     )
-                    Column(
-                        modifier = Modifier
-                            .verticalScroll(scrollState)
-                            .nestedScroll(scrollBehavior.nestedScrollConnection)
-                    ) {
-                        InstructionCard(
-                            title = "How to Play",
-                            items = listOf(
-                                "Solve multiplication problems",
-                                "Answer before time runs out",
-                                "Earn points for correct answers",
-                                "Lose lives for mistakes",
-                                "Beat your high score!"
-                            )
-                        )
 
-                        Spacer(modifier = Modifier.height(16.dp))
-                        InstructionCard(
-                            title = "Cool Features",
-                            items = listOf(
-                                "Fun math challenges",
-                                "Colorful graphics",
-                                "Exciting sound effects",
-                                "Track your progress",
-                                "Compete with friends"
-                            )
-                        )
-//            Spacer(modifier = Modifier.height(32.dp))
-                        Button(
-                            onClick = onStartGame,
-                            modifier = Modifier
-                                .scale(startButtonScale)
-                                .animateContentSize(),
-                            shape = MaterialTheme.shapes.medium
-                        ) {
-                            Text("Start Your Adventure!", fontSize = 18.sp)
-                        }
-                    }
+                    InstructionCard(
+                        title = "How to Play",
+                        items = listOf(
+                            "Solve multiplication problems swiftly.",
+                            "Answer correctly before time runs out.",
+                            "Earn shiny points for every right answer.",
+                            "Watch out! Mistakes cost you lives.",
+                            "Challenge yourself and beat your high score!"
+                        ),
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
 
+                    InstructionCard(
+                        title = "Cool Features",
+                        items = listOf(
+                            "Engaging math challenges for all ages.",
+                            "Vibrant, eye-catching graphics.",
+                            "Exciting sound effects to keep you going.",
+                            "Track your progress and see yourself grow.",
+                            "Compete with friends for top scores!"
+                        ),
+                        modifier = Modifier.padding(bottom = 32.dp)
+                    )
 
-
-
-
-
-                    LaunchedEffect(Unit) {
-                        while (true) {
-                            startButtonScale = 1.1f
-                            delay(500)
-                            startButtonScale = 1f
-                            delay(500)
-                        }
-                    }
+                    StartGameButton(onStartGame = onStartGame)
                 }
             }
-
         }
     }
 }
 
 @Composable
-fun InstructionCard(title: String, items: List<String>) {
-    Card(
+private fun StartGameButton(onStartGame: () -> Unit) {
+    var startButtonScale by remember { mutableFloatStateOf(1f) }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            startButtonScale = 1.08f
+            delay(400)
+            startButtonScale = 1f
+            delay(400)
+        }
+    }
+
+    Button(
+        onClick = onStartGame,
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF9C4))
+            .fillMaxWidth(0.8f)
+            .height(56.dp)
+            .graphicsLayer {
+                scaleX = startButtonScale
+                scaleY = startButtonScale
+            }
+            .shadow(
+                elevation = 8.dp,
+                shape = RoundedCornerShape(percent = 50),
+                spotColor = MaterialTheme.colorScheme.primary
+            ),
+        shape = RoundedCornerShape(percent = 50),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+        ),
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp, pressedElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Text(
+            text = "Start Your Adventure!",
+            fontSize = 20.sp,
+            fontWeight = FontWeight.ExtraBold,
+            fontFamily = BubbleFont
+        )
+    }
+}
+
+
+@Composable
+fun InstructionCard(title: String, items: List<String>, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp)
+            .shadow(
+                elevation = 6.dp,
+                shape = RoundedCornerShape(16.dp),
+                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+            ),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp) // Use theme surface with elevation
+        )
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF3F51B5),
-                modifier = Modifier.padding(bottom = 8.dp)
+                fontFamily = BubbleFont,
+                color = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.padding(bottom = 12.dp)
             )
             items.forEach { item ->
                 Row(
-                    modifier = Modifier.padding(vertical = 4.dp),
+                    modifier = Modifier.padding(vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(8.dp)
+                            .size(10.dp)
                             .background(
-                                brush = Brush.linearGradient(
+                                brush = Brush.radialGradient(
                                     colors = listOf(
-                                        MaterialTheme.colorScheme.primaryContainer,
-                                        Color(
-                                            0xFFFFA000
-                                        ),
-                                        MaterialTheme.colorScheme.primary
+                                        MaterialTheme.colorScheme.primary,
+                                        MaterialTheme.colorScheme.tertiary,
                                     )
-                                ), shape = RoundedCornerShape(50)
+                                ),
+                                shape = CircleShape
                             )
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = item, style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.primary
+                        text = item,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -219,30 +306,134 @@ fun InstructionCard(title: String, items: List<String>) {
 }
 
 @Composable
-private fun AnimatedBackground() {
-    val symbols = listOf("+", "-", "×", "÷", "=")
-    val colors = listOf(Color.Red, Color.Blue, Color.Green, Color.Magenta, Color.Cyan)
+private fun AnimatedFloatingSymbolsBackground() {
+    val symbols = listOf("➕", "➖", "✖️", "➗", "⚡", "⭐", "✅", "🔢")
+    val colors = listOf(
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+        MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f),
+        MaterialTheme.colorScheme.tertiary.copy(alpha = 0.6f),
+        MaterialTheme.colorScheme.error.copy(alpha = 0.6f),
+    )
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        repeat(20) {
-            var position by remember { mutableStateOf(randomOffset()) }
+    val screenWidth = LocalWindowInfo.current.containerSize.width.toFloat()
+    val screenHeight = LocalWindowInfo.current.containerSize.height.toFloat()
+    val scope = rememberCoroutineScope()
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .alpha(0.6f)
+    ) {
+        repeat(15) {
             val symbol = remember { symbols.random() }
             val color = remember { colors.random() }
+            val initialOffset = remember {
+                Offset(
+                    x = Random.nextFloat() * screenWidth,
+                    y = Random.nextFloat() * screenHeight
+                )
+            }
+            val animatableOffsetX = remember { Animatable(initialOffset.x) }
+            val animatableOffsetY = remember { Animatable(initialOffset.y) }
+            val animatableScale =
+                remember { Animatable(Random.nextFloat() * 0.5f + 0.5f) }
+            val animatableRotation = remember { Animatable(Random.nextFloat() * 360f) }
+            val animatableAlpha =
+                remember { Animatable(0.3f + Random.nextFloat() * 0.4f) }
+
+            LaunchedEffect(Unit) {
+                // Animate X movement (left to right or right to left)
+                scope.launch {
+                    val targetX = if (Random.nextBoolean()) -50f else screenWidth + 50f
+                    animatableOffsetX.animateTo(
+                        targetValue = targetX,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(
+                                durationMillis = Random.nextInt(8000, 15000),
+                                easing = LinearEasing
+                            ),
+                            repeatMode = RepeatMode.Restart
+                        )
+                    )
+                }
+
+                // Animate Y movement (subtle up and down or random)
+                scope.launch {
+                    val targetY =
+                        initialOffset.y + Random.nextFloat() * 100 - 50
+                    animatableOffsetY.animateTo(
+                        targetValue = targetY,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(
+                                durationMillis = Random.nextInt(7000, 12000),
+                                easing = LinearEasing
+                            ),
+                            repeatMode = RepeatMode.Reverse
+                        )
+                    )
+                }
+
+                // Animate Scale (pulsating)
+                launch {
+                    animatableScale.animateTo(
+                        targetValue = animatableScale.value * 1.2f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(
+                                durationMillis = Random.nextInt(1500, 2500),
+                                easing = LinearEasing
+                            ),
+                            repeatMode = RepeatMode.Reverse
+                        )
+                    )
+                }
+
+                // Animate Rotation
+                launch {
+                    animatableRotation.animateTo(
+                        targetValue = animatableRotation.value + 360f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(
+                                durationMillis = Random.nextInt(10000, 20000),
+                                easing = LinearEasing
+                            ),
+                            repeatMode = RepeatMode.Restart
+                        )
+                    )
+                }
+
+                // Animate Alpha (fading in/out slightly)
+                launch {
+                    animatableAlpha.animateTo(
+                        targetValue = animatableAlpha.value * 0.8f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(
+                                durationMillis = Random.nextInt(2000, 4000),
+                                easing = LinearEasing
+                            ),
+                            repeatMode = RepeatMode.Reverse
+                        )
+                    )
+                }
+            }
 
             Text(
                 text = symbol,
                 color = color,
-                fontSize = 24.sp,
+                fontSize = (28.sp * animatableScale.value),
                 modifier = Modifier
-                    .offset { IntOffset(position.x.toInt(), position.y.toInt()) }
+                    .offset {
+                        IntOffset(
+                            x = animatableOffsetX.value.roundToInt(),
+                            y = animatableOffsetY.value.roundToInt()
+                        )
+                    }
+                    .graphicsLayer {
+                        alpha = animatableAlpha.value
+                        rotationZ = animatableRotation.value
+                        scaleX = animatableScale.value
+                        scaleY = animatableScale.value
+                    }
             )
-
-            LaunchedEffect(Unit) {
-                while (true) {
-                    delay(Random.nextLong(3000, 5000))
-                    position = randomOffset()
-                }
-            }
         }
     }
 }
@@ -253,8 +444,5 @@ private fun AnimatedBackground() {
 private fun PreviewInstructionsScreen() {
     MultiplyTheme {
         InstructionsScreen(onStartGame = {}, navigateUp = {})
-
     }
-
 }
-
