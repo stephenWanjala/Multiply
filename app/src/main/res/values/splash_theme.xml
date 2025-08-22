@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <!-- Set the splash screen background color -->
+        <!--    <item name="windowSplashScreenBackground">@color/white</item>-->
+
+        <!-- Use your app icon as the splash image -->
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+
+        <!-- Set the theme that will be used after the splash screen -->
+        <item name="postSplashScreenTheme">@style/Theme.Multiply</item>
+
+        <!-- Optional: Set splash screen animation duration -->
+        <item name="windowSplashScreenAnimationDuration">1000</item>
+    </style>
+</resources>

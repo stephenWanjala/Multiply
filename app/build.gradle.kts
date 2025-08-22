@@ -74,6 +74,8 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.compose.material.icons.extended)
 
+    implementation(libs.androidx.core.splashscreen)
+
     // https://mvnrepository.com/artifact/org.jetbrains.kotlin/kotlin-test
     implementation(libs.kotlin.test)
 
