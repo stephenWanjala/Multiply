@@ -37,25 +37,38 @@ class QuestionsViewModel @Inject constructor(
     fun onAction(action: QuestionAction) {
         when (action) {
             is QuestionAction.SelectAnswer -> {
-                _state.update { it.copy(selectedAnswer = action.answer) }
+                _state.update { state ->
+                    val index = state.currentQuestionIndex
+                    val updatedMap = state.selectedAnswers + (index to action.answer)
+                    state.copy(
+                        selectedAnswer = action.answer,
+                        selectedAnswers = updatedMap
+                    )
+                }
             }
             QuestionAction.SubmitAnswer -> {
                 submitAnswers()
             }
             QuestionAction.NextQuestion -> {
                 _state.update { state ->
-                    val nextIndex = state.currentQuestionIndex + 1
+                    val currentIndex = state.currentQuestionIndex
+                    val lastIndex = state.questions.lastIndex
+                    val safeCurrentIndex = currentIndex.coerceIn(0, maxOf(lastIndex, 0))
+                    // Move to next only if not at last
+                    val nextIndex = if (safeCurrentIndex < lastIndex) safeCurrentIndex + 1 else safeCurrentIndex
                     state.copy(
                         currentQuestionIndex = nextIndex,
                         currentQuestion = state.questions.getOrNull(nextIndex),
-                        selectedAnswer = null,
-                        showDoneButton = nextIndex == state.questions.lastIndex
+                        // restore previously selected answer for that question if any
+                        selectedAnswer = state.selectedAnswers[nextIndex],
+                        showDoneButton = nextIndex == lastIndex
                     )
                 }
             }
             QuestionAction.PreviousQuestion -> {
                 _state.update { state ->
-                    val prevIndex = state.currentQuestionIndex - 1
+                    val currentIndex = state.currentQuestionIndex
+                    val prevIndex = (currentIndex - 1).coerceAtLeast(0)
                     state.copy(
                         currentQuestionIndex = prevIndex,
                         currentQuestion = state.questions.getOrNull(prevIndex),
@@ -75,12 +88,26 @@ class QuestionsViewModel @Inject constructor(
     }
     private  fun setUpQuestions(){
         val questions = generateQuestions(state.value.level)
-        println(questions)
-        _state.update { it.copy(questions = questions, currentQuestion = questions.first()) }
+        _state.update {
+            it.copy(
+                questions = questions,
+                currentQuestionIndex = 0,
+                currentQuestion = questions.firstOrNull(),
+                selectedAnswers = emptyMap(),
+                selectedAnswer = null,
+                results = emptyList(),
+                showRecap = false,
+                showDoneButton = false,
+                showPreviousButton = false,
+                nextButtonEnabled = false
+            )
+        }
     }
 
     private fun setDifficulty(difficulty: QuizDifficulty) {
         _state.update { it.copy(level = difficulty) }
+        // Immediately set up questions for the chosen level to avoid empty UI while DataStore updates
+        setUpQuestions()
         viewModelScope.launch {
             dataStore.edit { prefs ->
                 prefs[LEVEL_KEY] = difficulty.ordinal
@@ -90,12 +117,14 @@ class QuestionsViewModel @Inject constructor(
 
     private fun submitAnswers() {
         viewModelScope.launch {
-            val results = state.value.questions.mapIndexed { index, question ->
+            val currentState = state.value
+            val results = currentState.questions.mapIndexed { index, question ->
+                val userAns = currentState.selectedAnswers[index]
                 GameResult(
                     question = question.question,
                     correctAnswer = question.answer,
-                    userAnswer = state.value.selectedAnswers[index] ?: -1,
-                    isCorrect = state.value.selectedAnswers[index] == question.answer
+                    userAnswer = userAns ?: -1,
+                    isCorrect = userAns == question.answer
                 )
             }
             _state.update { it.copy(results = results, showRecap = true) }

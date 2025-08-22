@@ -61,6 +61,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -174,7 +175,7 @@ private fun QuestionContent(
             )
         }
 
-        Spacer(modifier = Modifier.weight(1f))
+//        Spacer(modifier = Modifier.weight(1f))
 
         // Answer grid with animated entries
         LazyVerticalGrid(
@@ -235,6 +236,7 @@ private fun AnswerParticle(
 
     Box(
         modifier = Modifier
+            .padding(16.dp)
             .aspectRatio(1f)
             .neumorphicShadow(
                 offset = 8.dp,
@@ -242,13 +244,11 @@ private fun AnswerParticle(
                 shape = CircleShape,
                 inverted = true
             )
-
             .background(
                 color = animatedColor,
                 shape = CircleShape
-            )
-            .clickable(onClick = onClick)
-            .padding(16.dp),
+            ).clip(CircleShape)
+            .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -333,7 +333,7 @@ fun QuestionsTopAppBar(
         )
 
         val animatedProgress by animateFloatAsState(
-            targetValue = (currentQuestionIndex + 1) / totalCount.toFloat(),
+            targetValue = if (totalCount > 0) (currentQuestionIndex + 1) / totalCount.toFloat() else 0f,
             animationSpec = ProgressIndicatorDefaults.ProgressAnimationSpec
         )
         LinearProgressIndicator(
@@ -439,9 +439,11 @@ fun RecapScreen(results: List<GameResult>, onClosePressed: () -> Unit) {
                 })
             }
         ) { padding ->
-            LazyColumn(modifier = Modifier
-                .padding(padding)
-                .fillMaxSize()) {
+            LazyColumn(
+                modifier = Modifier
+                    .padding(padding)
+                    .fillMaxSize()
+            ) {
                 itemsIndexed(results) { index, result ->
                     QuestionRecapItem(questionNumber = index + 1, result = result)
                     Spacer(modifier = Modifier.height(8.dp))
