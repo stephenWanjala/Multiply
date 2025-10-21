@@ -7,10 +7,24 @@ import kotlin.random.Random
 
 private val random = Random.Default
 
+/**
+ * Generates a list of math questions for the given quiz difficulty.
+ *
+ * @param difficulty The difficulty level which determines the number and type of questions.
+ * @return A list containing difficulty.questionCount MathQuestion items.
+ */
 fun generateQuestions(difficulty: QuizDifficulty): List<MathQuestion> {
     return List(difficulty.questionCount) { generateQuestion(difficulty) }
 }
 
+/**
+ * Generates a single math question appropriate for the provided difficulty.
+ *
+ * Internally dispatches to specific generators for each difficulty tier.
+ *
+ * @param difficulty The quiz difficulty used to determine the question type and range.
+ * @return A MathQuestion with computed correct answer and plausible wrong answers.
+ */
 fun generateQuestion(difficulty: QuizDifficulty): MathQuestion {
     return when (difficulty) {
         QuizDifficulty.BEGINNER -> generateBeginnerQuestion()
@@ -239,7 +253,20 @@ private fun generateSequentialOperation(): MathQuestion {
 }
 
 /**
- * Generates smart wrong answers that are mathematically plausible
+ * Generates mathematically plausible wrong answers for a given correct answer.
+ *
+ * The strategy mixes:
+ * - Small off-by-one and off-by-two errors
+ * - Common calculation mistakes (doubling/halving, +/- 10)
+ * - Randomized offsets with varying magnitudes
+ *
+ * All returned values are non-negative, distinct from the correct answer, and
+ * the final selection is shuffled and trimmed to three items.
+ *
+ * @param correctAnswer The correct result to generate distractors for.
+ * @param baseRange The base range used for small/medium offset generation.
+ * @param maxOffset The maximum absolute offset considered for large errors.
+ * @return A sorted list of three plausible wrong answers.
  */
 private fun generateSmartWrongAnswers(
     correctAnswer: Int,
