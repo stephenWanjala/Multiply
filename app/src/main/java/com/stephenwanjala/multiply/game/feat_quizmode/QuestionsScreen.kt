@@ -163,6 +163,7 @@ private fun RegularQuestionContent(
     onAnswerSelected: (Int) -> Unit
 ) {
     val currentQuestion = state.currentQuestion
+    val questionLength = currentQuestion?.question?.length ?: 0
     val infiniteTransition = rememberInfiniteTransition(label = "infiniteTransition")
     val animatedOffset by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -181,11 +182,17 @@ private fun RegularQuestionContent(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Floating question card
+        // Adjust question card size based on question length
+        val questionPadding = if (questionLength > 10) 16.dp else 32.dp
+        val questionTextStyle = if (questionLength > 10)
+            MaterialTheme.typography.headlineMedium
+        else
+            MaterialTheme.typography.displayMedium
+
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 32.dp)
+                .padding(vertical = questionPadding)
                 .neumorphicShadow(
                     lightColor = MaterialTheme.colorScheme.surface
                 )
@@ -211,7 +218,7 @@ private fun RegularQuestionContent(
             ) { targetQuestionText ->
                 Text(
                     text = targetQuestionText ?: "🎲 Loading...",
-                    style = MaterialTheme.typography.displayMedium.copy(
+                    style = questionTextStyle.copy(
                         fontWeight = FontWeight.ExtraBold,
                         textAlign = TextAlign.Center
                     ),
@@ -298,7 +305,7 @@ private fun LargeNumberQuestionContent(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Single column for large numbers - easier to read
+            // Single column for large numbers
             LazyColumn(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
