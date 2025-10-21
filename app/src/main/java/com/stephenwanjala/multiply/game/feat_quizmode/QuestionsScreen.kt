@@ -81,6 +81,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.stephenwanjala.multiply.game.components.glowingOrbs
 import com.stephenwanjala.multiply.game.components.neumorphicShadow
+import com.stephenwanjala.multiply.game.models.hasLargeNumbers
+
 //TODO("TO BE REMOVED")
 const val EMOJI_DISPLAY_THRESHOLD = 12
 
@@ -138,6 +140,28 @@ private fun QuestionContent(
     onAnswerSelected: (Int) -> Unit
 ) {
     val currentQuestion = state.currentQuestion
+    val hasLargeNumbers = currentQuestion?.hasLargeNumbers() ?: false
+
+    // Use different layouts based on number size
+    if (hasLargeNumbers) {
+        LargeNumberQuestionContent(
+            state = state,
+            onAnswerSelected = onAnswerSelected
+        )
+    } else {
+        RegularQuestionContent(
+            state = state,
+            onAnswerSelected = onAnswerSelected
+        )
+    }
+}
+
+@Composable
+private fun RegularQuestionContent(
+    state: QuestionsState,
+    onAnswerSelected: (Int) -> Unit
+) {
+    val currentQuestion = state.currentQuestion
     val infiniteTransition = rememberInfiniteTransition(label = "infiniteTransition")
     val animatedOffset by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -156,7 +180,7 @@ private fun QuestionContent(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Floating question card with dynamic shadow
+        // Floating question card
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -191,14 +215,12 @@ private fun QuestionContent(
                         textAlign = TextAlign.Center
                     ),
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.offset(y = (-animatedOffset).dp) // Keep the floating animation
+                    modifier = Modifier.offset(y = (-animatedOffset).dp)
                 )
             }
         }
 
-//        Spacer(modifier = Modifier.weight(1f))
-
-        // Answer grid with animated entries
+        // Regular grid for normal numbers
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
             modifier = Modifier.fillMaxWidth(),
@@ -217,74 +239,181 @@ private fun QuestionContent(
             }
         }
 
+        ProgressIndicators(state)
+    }
+}
 
-        Row(
-            modifier = Modifier.padding(top = 24.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+@Composable
+private fun LargeNumberQuestionContent(
+    state: QuestionsState,
+    onAnswerSelected: (Int) -> Unit
+) {
+    val currentQuestion = state.currentQuestion
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(8.dp),
+        verticalArrangement = Arrangement.SpaceBetween,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Compact question display for large numbers
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (state.questions.size <= EMOJI_DISPLAY_THRESHOLD) {
-                // Detailed emoji display
-                repeat(state.questions.size) { index ->
-                    val isCurrent = index == state.currentQuestionIndex
-                    val emoji = when {
-                        index < state.currentQuestionIndex -> "✅"
-                        isCurrent -> "🎯"
-                        else -> "➖"
-                    }
-                    val scale by animateFloatAsState(
-                        targetValue = if (isCurrent) 1.5f else 1f,
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                            stiffness = Spring.StiffnessLow
-                        ),
-                        label = "emojiScaleAnimation"
-                    )
+            // Simpler question display without floating animation
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            ) {
+                Text(
+                    text = currentQuestion?.question ?: "🎲 Loading...",
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    ),
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.padding(20.dp)
+                )
+            }
 
-                    AnimatedContent(
-                        targetState = emoji,
-                        transitionSpec = {
-                            (fadeIn(animationSpec = tween(220, delayMillis = 90)) +
-                                    scaleIn(animationSpec = tween(220, delayMillis = 90), initialScale = 0.9f))
-                                .togetherWith(fadeOut(animationSpec = tween(90)) +
-                                        scaleOut(animationSpec = tween(90), targetScale = 0.9f))
-                        },
-                        label = "emojiTextAnimation",
-                        modifier = Modifier.scale(scale)
-                    ) { targetEmoji ->
-                        Text(text = targetEmoji)
-                    }
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Single column for large numbers - easier to read
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(currentQuestion?.allAnswers?.size ?: 0) { index ->
+                    val answer = currentQuestion?.allAnswers?.get(index) ?: 0
+                    val isSelected = answer == state.selectedAnswer
+
+                    LargeNumberAnswerOption(
+                        number = answer,
+                        isSelected = isSelected,
+                        onClick = { onAnswerSelected(answer) }
+                    )
                 }
-            } else {
-                val currentEmoji = "🎯"
+            }
+        }
+
+        ProgressIndicators(state)
+    }
+}
+
+@Composable
+private fun LargeNumberAnswerOption(
+    number: Int,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val backgroundColor by animateColorAsState(
+        targetValue = if (isSelected) MaterialTheme.colorScheme.primary
+        else MaterialTheme.colorScheme.surfaceVariant,
+        animationSpec = spring(stiffness = Spring.StiffnessLow),
+        label = "largeNumberAnswerColor"
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(60.dp)
+            .background(
+                color = backgroundColor,
+                shape = RoundedCornerShape(12.dp)
+            )
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = number.toString(),
+            style = MaterialTheme.typography.titleLarge.copy(
+                fontWeight = FontWeight.Medium
+            ),
+            color = if (isSelected) MaterialTheme.colorScheme.onPrimary
+            else MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            maxLines = 1
+        )
+    }
+}
+
+@Composable
+private fun ProgressIndicators(state: QuestionsState) {
+    Row(
+        modifier = Modifier.padding(top = 24.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (state.questions.size <= EMOJI_DISPLAY_THRESHOLD) {
+            repeat(state.questions.size) { index ->
+                val isCurrent = index == state.currentQuestionIndex
+                val emoji = when {
+                    index < state.currentQuestionIndex -> "✅"
+                    isCurrent -> "🎯"
+                    else -> "➖"
+                }
                 val scale by animateFloatAsState(
-                    targetValue = 1.5f,
+                    targetValue = if (isCurrent) 1.5f else 1f,
                     animationSpec = spring(
                         dampingRatio = Spring.DampingRatioMediumBouncy,
                         stiffness = Spring.StiffnessLow
                     ),
-                    label = "currentEmojiScale"
+                    label = "emojiScaleAnimation"
                 )
+
                 AnimatedContent(
-                    targetState = currentEmoji,
+                    targetState = emoji,
                     transitionSpec = {
                         (fadeIn(animationSpec = tween(220, delayMillis = 90)) +
                                 scaleIn(animationSpec = tween(220, delayMillis = 90), initialScale = 0.9f))
                             .togetherWith(fadeOut(animationSpec = tween(90)) +
                                     scaleOut(animationSpec = tween(90), targetScale = 0.9f))
                     },
-                    label = "currentEmojiAnimation",
+                    label = "emojiTextAnimation",
                     modifier = Modifier.scale(scale)
                 ) { targetEmoji ->
                     Text(text = targetEmoji)
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "${state.currentQuestionIndex + 1} / ${state.questions.size}",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
-                )
             }
+        } else {
+            val currentEmoji = "🎯"
+            val scale by animateFloatAsState(
+                targetValue = 1.5f,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessLow
+                ),
+                label = "currentEmojiScale"
+            )
+            AnimatedContent(
+                targetState = currentEmoji,
+                transitionSpec = {
+                    (fadeIn(animationSpec = tween(220, delayMillis = 90)) +
+                            scaleIn(animationSpec = tween(220, delayMillis = 90), initialScale = 0.9f))
+                        .togetherWith(fadeOut(animationSpec = tween(90)) +
+                                scaleOut(animationSpec = tween(90), targetScale = 0.9f))
+                },
+                label = "currentEmojiAnimation",
+                modifier = Modifier.scale(scale)
+            ) { targetEmoji ->
+                Text(text = targetEmoji)
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "${state.currentQuestionIndex + 1} / ${state.questions.size}",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
+            )
         }
     }
 }

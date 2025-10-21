@@ -8,3 +8,8 @@ data class MathQuestion(
 ) {
     val allAnswers: List<Int> = (wrongAnswers + answer).shuffled()
 }
+
+
+fun Int.isLargeNumber(): Boolean = this > 1000
+fun MathQuestion.hasLargeNumbers(): Boolean =
+    answer.isLargeNumber() || allAnswers.any { it.isLargeNumber() }
