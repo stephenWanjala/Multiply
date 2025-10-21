@@ -74,6 +74,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
@@ -249,6 +250,16 @@ private fun LargeNumberQuestionContent(
     onAnswerSelected: (Int) -> Unit
 ) {
     val currentQuestion = state.currentQuestion
+    val infiniteTransition = rememberInfiniteTransition(label = "infiniteTransition")
+    val animatedOffset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 8f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "animatedOffset"
+    )
 
     Column(
         modifier = Modifier
@@ -265,7 +276,6 @@ private fun LargeNumberQuestionContent(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Simpler question display without floating animation
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -282,7 +292,7 @@ private fun LargeNumberQuestionContent(
                         textAlign = TextAlign.Center
                     ),
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.padding(20.dp)
+                    modifier = Modifier.padding(20.dp).offset(y = (-animatedOffset).dp)
                 )
             }
 
@@ -334,16 +344,28 @@ private fun LargeNumberAnswerOption(
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = number.toString(),
-            style = MaterialTheme.typography.titleLarge.copy(
-                fontWeight = FontWeight.Medium
-            ),
-            color = if (isSelected) MaterialTheme.colorScheme.onPrimary
-            else MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            maxLines = 1
-        )
+        AnimatedContent(
+            targetState = number.toString(),
+            transitionSpec = {
+                (fadeIn(animationSpec = tween(220, delayMillis = 90)) +
+                        scaleIn(animationSpec = tween(220, delayMillis = 90), initialScale = 0.9f))
+                    .togetherWith(fadeOut(animationSpec = tween(90)) +
+                            scaleOut(animationSpec = tween(90), targetScale = 0.9f))
+            },
+            label = "LargeNumberAnswerOptionTextAnimation"
+        ){answer->
+            Text(
+                text = answer,
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Medium
+                ),
+                color = if (isSelected) MaterialTheme.colorScheme.onPrimary
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                maxLines = 1
+            )
+
+        }
     }
 }
 
