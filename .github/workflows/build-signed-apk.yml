@@ -55,7 +55,7 @@ jobs:
         run: ./gradlew :app:assembleRelease --stacktrace
 
       - name: Zipalign APK
-        if: ${{ github.event_name != 'pull_request' && secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        if: ${{ github.event_name != 'pull_request' && secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
           UNSIGNED_APK=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
           echo "Found unsigned APK: $UNSIGNED_APK"
@@ -64,7 +64,7 @@ jobs:
           echo "ZIPALIGNED_APK=$ZIPALIGNED_APK" >> $GITHUB_ENV
 
       - name: Sign APK
-        if: ${{ github.event_name != 'pull_request' && secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        if: ${{ github.event_name != 'pull_request' && secrets.ANDROID_KEYSTORE_BASE64 }}
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
@@ -74,7 +74,7 @@ jobs:
           if [ -z "$APK_TO_SIGN" ]; then
             echo "ZIPALIGNED_APK not set" && exit 1
           fi
-          "/usr/local/android-sdk/build-tools/36.0.0/apksigner" sign \
+          /usr/local/android-sdk/build-tools/36.0.0/apksigner sign \
             --ks app/release.keystore \
             --ks-pass pass:"$ANDROID_KEYSTORE_PASSWORD" \
             --key-pass pass:"$ANDROID_KEY_PASSWORD" \
@@ -83,8 +83,8 @@ jobs:
           echo "SIGNED_APK=$APK_TO_SIGN" >> $GITHUB_ENV
 
       - name: Verify APK signature
-        if: ${{ github.event_name != 'pull_request' && secrets.ANDROID_KEYSTORE_BASE64 != '' }}
-        run: "/usr/local/android-sdk/build-tools/36.0.0/apksigner" verify --print-certs "$SIGNED_APK"
+        if: ${{ github.event_name != 'pull_request' && secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: /usr/local/android-sdk/build-tools/36.0.0/apksigner verify --print-certs "$SIGNED_APK"
 
       - name: Collect artifact path
         run: |
