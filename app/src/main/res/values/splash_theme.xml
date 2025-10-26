@@ -3,6 +3,8 @@
     <style name="Theme.App.Starting" parent="Theme.SplashScreen">
         <!-- Set the splash screen background color -->
         <!--    <item name="windowSplashScreenBackground">@color/white</item>-->
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
 
         <!-- Use your app icon as the splash image -->
         <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
