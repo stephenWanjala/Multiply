@@ -75,6 +75,13 @@ jobs:
             "$APK_TO_SIGN"
           echo "SIGNED_APK=${APK_TO_SIGN}" >> $GITHUB_ENV
 
+      - name: Rename signed APK
+        if: ${{ github.event_name != 'pull_request' && env.ANDROID_KEYSTORE_BASE64 != '' }}
+        run: |
+          mv "$ZIPALIGNED_APK" app/build/outputs/apk/release/Multiply.apk
+          echo "SIGNED_APK=app/build/outputs/apk/release/Multiply.apk" >> $GITHUB_ENV
+          echo "Renamed signed APK to Multiply.apk"
+
       - name: Verify APK signature
         if: ${{ github.event_name != 'pull_request' && env.ANDROID_KEYSTORE_BASE64 != '' }}
         run: |
