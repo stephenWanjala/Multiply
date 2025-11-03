@@ -34,14 +34,10 @@ class MainActivity : ComponentActivity() {
         setContent {
             val navHostController = rememberNavController()
             MultiplyTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     MultiplyNav(
                         navHostController = navHostController,
                         modifier = Modifier
-                            .padding(paddingValues = innerPadding)
-                            .consumeWindowInsets(paddingValues = innerPadding)
                     )
-                }
             }
         }
     }

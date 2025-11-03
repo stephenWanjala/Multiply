@@ -97,11 +97,7 @@ fun WelcomeScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp),
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp)
-                ),
-                windowInsets = WindowInsets.statusBars
+//                windowInsets = WindowInsets.statusBars
             )
         }
     ) { paddingValues ->
