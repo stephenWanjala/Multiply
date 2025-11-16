@@ -1,23 +1,56 @@
 package com.stephenwanjala.multiply.game
 
-import androidx.activity.compose.BackHandler
-import androidx.compose.animation.*
+import androidx.activity.BackEventCompat
+import androidx.activity.compose.PredictiveBackHandler
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,8 +75,15 @@ import com.stephenwanjala.multiply.game.components.animatedBackground
 import com.stephenwanjala.multiply.game.components.glowingOrbs
 import com.stephenwanjala.multiply.game.components.neumorphicShadow
 import com.stephenwanjala.multiply.game.components.repeatLiquidBackground
-import com.stephenwanjala.multiply.game.models.*
+import com.stephenwanjala.multiply.game.models.BubbleMathDifficulty
+import com.stephenwanjala.multiply.game.models.GameMode
+import com.stephenwanjala.multiply.game.models.GameModeSaver
+import com.stephenwanjala.multiply.game.models.ModeDifficulty
+import com.stephenwanjala.multiply.game.models.ModeDifficultySaver
+import com.stephenwanjala.multiply.game.models.QuizDifficulty
 import com.stephenwanjala.multiply.ui.theme.MultiplyTheme
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 
 @Composable
@@ -60,16 +100,29 @@ fun GameModeSelectionScreen(
         mutableStateOf<ModeDifficulty?>(null)
     }
 
+    var backProgress by remember { mutableFloatStateOf(0f) }
 
     val modes = listOf(
         GameMode.BubbleMathBlitz(BubbleMathDifficulty.EASY),
         GameMode.QuizGenius(QuizDifficulty.BEGINNER)
     )
 
+
     if (selectedMode != null) {
-        BackHandler {
-            selectedMode = null
-            selectedDifficulty = null
+        PredictiveBackHandler { progress: Flow<BackEventCompat> ->
+            try {
+                progress.collect { backEvent ->
+                    backProgress = backEvent.progress
+                }
+                selectedMode = null
+                selectedDifficulty = null
+                backProgress = 0f
+            } catch (e: CancellationException) {
+                // Cancellation: user released the gesture without completing
+                // Animate back to normal state
+                backProgress = 0f
+                throw e
+            }
         }
     }
 
@@ -93,7 +146,14 @@ fun GameModeSelectionScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .animatedBackground()
-                .padding(24.dp),
+                .padding(24.dp)
+                // Apply predictive back animation transforms
+                .graphicsLayer(
+                    scaleX = 1f - (backProgress * 0.05f),
+                    scaleY = 1f - (backProgress * 0.05f),
+                    translationX = backProgress * 100f,
+                    alpha = 1f - (backProgress * 0.2f)
+                ),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Header
@@ -121,7 +181,7 @@ fun GameModeSelectionScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Step 1: GameMode selection - Always visible but fades/scales out when mode is selected
+            // Step 1: GameMode selection
             AnimatedVisibility(
                 visible = selectedMode == null,
                 enter = fadeIn(animationSpec = tween(400, delayMillis = 200)) +
@@ -154,7 +214,7 @@ fun GameModeSelectionScreen(
                     modes.forEach { modeOption ->
                         Material3GameModeCard(
                             mode = modeOption,
-                            isSelected = false, // Never show as selected in this view
+                            isSelected = false,
                             onClick = {
                                 selectedMode = modeOption
                                 selectedDifficulty = null
@@ -164,12 +224,12 @@ fun GameModeSelectionScreen(
                 }
             }
 
-            // Step 2: Difficulty selection - Slides up from bottom with smooth animation
+            // Step 2: Difficulty selection
             AnimatedVisibility(
                 visible = selectedMode != null,
                 enter = fadeIn(animationSpec = tween(400, delayMillis = 150)) +
                         slideInVertically(
-                            initialOffsetY = { it / 2 }, // Start from halfway down
+                            initialOffsetY = { it / 2 },
                             animationSpec = spring(
                                 dampingRatio = Spring.DampingRatioMediumBouncy,
                                 stiffness = Spring.StiffnessLow
@@ -222,7 +282,6 @@ fun GameModeSelectionScreen(
                             }
                         )
 
-                        // High Score display with smooth entrance
                         AnimatedVisibility(
                             visible = selectedDifficulty != null,
                             enter = fadeIn(animationSpec = tween(300, delayMillis = 200)) +
@@ -268,7 +327,6 @@ fun GameModeSelectionScreen(
 
                         Spacer(modifier = Modifier.height(24.dp))
 
-                        // Action buttons with staggered animation
                         AnimatedVisibility(
                             visible = true,
                             enter = fadeIn(animationSpec = tween(300, delayMillis = 300)) +
@@ -296,28 +354,6 @@ fun GameModeSelectionScreen(
                                         }
                                     }
                                 )
-
-                                /*
-                                OutlinedButton(
-                                    onClick = {
-                                        selectedMode = null
-                                        selectedDifficulty = null
-                                    },
-                                    colors = ButtonDefaults.outlinedButtonColors(
-                                        contentColor = MaterialTheme.colorScheme.onSurface
-                                    ),
-                                    border = ButtonDefaults.outlinedButtonBorder().copy(
-                                        brush = Brush.linearGradient(
-                                            listOf(
-                                                MaterialTheme.colorScheme.outline,
-                                                MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                                            )
-                                        )
-                                    )
-                                ) {
-                                    Text("Back to Mode Selection")
-                                }
-                                 */
                             }
                         }
                     }
@@ -463,12 +499,11 @@ fun Material3LevelSelectionGrid(
 ) {
     val haptics = LocalHapticFeedback.current
 
-
     val difficultyColors = listOf(
-        MaterialTheme.colorScheme.primary,        // Easy - Primary color
-        MaterialTheme.colorScheme.secondary,      // Medium - Secondary color
-        MaterialTheme.colorScheme.tertiary,       // Hard - Tertiary color
-        MaterialTheme.colorScheme.error           // Expert - Error color for danger
+        MaterialTheme.colorScheme.primary,
+        MaterialTheme.colorScheme.secondary,
+        MaterialTheme.colorScheme.tertiary,
+        MaterialTheme.colorScheme.error
     )
 
     FlowRow(
@@ -681,7 +716,6 @@ fun MaterialSectionTitle(text: String) {
         )
     }
 }
-
 
 private val GameMode.name: String
     get() = when (this) {
