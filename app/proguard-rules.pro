@@ -1,47 +1,82 @@
-# ProGuard/R8 rules for Multiply app
-# Build uses: Jetpack Compose, Hilt (Dagger), Kotlin coroutines, DataStore Preferences,
-# Navigation-Compose, and kotlinx.serialization (plugin applied, conservative keep below).
-# Release build is minified and shrinks resources.
+# ProGuard/R8 rules for Multiply app - Maximum APK size reduction
+# CRITICAL: Also add to gradle.properties:
 
-# ----- General Kotlin/Android keeps -----
-# Keep important class attributes used by Kotlin, generics, and DI generated code
--keepattributes *Annotation*, InnerClasses, EnclosingMethod, Signature
+# ----- Extreme optimization settings -----
+-allowaccessmodification
+-repackageclasses ''
+-overloadaggressively
+-mergeinterfacesaggressively
 
-# Keep enum valueOf()/values() methods (defensive; sometimes used reflectively)
--keepclassmembers enum * {
+# ----- Minimal attribute preservation -----
+-keepattributes Signature,RuntimeVisible*Annotations
+# Uncomment for crash reports (adds ~1-2KB):
+# -keepattributes SourceFile,LineNumberTable
+# -renamesourcefileattribute SourceFile
+
+# ----- Enum optimization -----
+# Only keep enum methods if actually used reflectively
+-keepclassmembers,allowoptimization enum * {
     public static **[] values();
     public static ** valueOf(java.lang.String);
 }
 
-# ----- Android components -----
-# These are kept automatically by default rules via manifest, but we keep names defensively
--keep class com.stephenwanjala.multiply.MultiplyApp
--keep class com.stephenwanjala.multiply.MainActivity
+# ----- Android components (allow obfuscation) -----
+-keep,allowobfuscation,allowshrinking class com.stephenwanjala.multiply.MultiplyApp
+-keep,allowobfuscation,allowshrinking class com.stephenwanjala.multiply.MainActivity
 
 # ----- Dagger/Hilt -----
-# Hilt provides its own keep rules; suppress possible warnings from generated/internal types
--dontwarn dagger.hilt.internal.**
--dontwarn dagger.internal.**
+# Hilt's consumer rules handle most; suppress warnings to avoid bloat from defensive keeps
+-dontwarn dagger.**
 -dontwarn javax.inject.**
 
-# ----- Kotlinx Serialization (scoped to Navigation destinations) -----
-# We only serialize navigation destinations; keep just those to avoid broad keeps
--keep class com.stephenwanjala.multiply.ui.navigation.MultiplyDestination
--keep class com.stephenwanjala.multiply.ui.navigation.MultiplyDestination$* { *; }
--dontwarn kotlinx.serialization.**
+# ----- Kotlinx Serialization (Navigation only) -----
+-if @kotlinx.serialization.Serializable class **
+-keepclassmembers class <1> {
+    static <1>$Companion Companion;
+}
+-if @kotlinx.serialization.Serializable class ** {
+    static **$* *;
+}
+-keepclassmembers class <1>$<3> {
+    kotlinx.serialization.KSerializer serializer(...);
+}
+-keep,includedescriptorclasses class com.stephenwanjala.multiply.ui.navigation.**$serializer { *; }
+-keepclassmembers class com.stephenwanjala.multiply.ui.navigation.** {
+    *** Companion;
+}
+-keepclasseswithmembers class com.stephenwanjala.multiply.ui.navigation.** {
+    kotlinx.serialization.KSerializer serializer(...);
+}
 
 # ----- Jetpack Compose -----
-# Compose libraries ship consumer rules; no extra keeps are typically required.
-# Suppress potential warnings from generated/inlined code in Compose tooling
+# Compose libraries have consumer rules; suppress warnings
 -dontwarn androidx.compose.**
 
-## ----- Coroutines / Kotlin stdlib -----
-## These are well-supported by R8; silence potential harmless warnings
+# ----- Coroutines / Kotlin stdlib -----
 -dontwarn kotlinx.coroutines.**
-#
-## ----- DataStore Preferences -----
+-dontwarn kotlin.**
+
+# ----- DataStore Preferences -----
 -dontwarn androidx.datastore.**
 
-# ----- Optional: keep line numbers for better crash reports (uncomment if desired) -----
-# -keepattributes SourceFile,LineNumberTable
-# -renamesourcefileattribute SourceFile
+# ----- Remove logging in release -----
+# Strip all Log calls to reduce code size (optional but recommended)
+-assumenosideeffects class android.util.Log {
+    public static *** d(...);
+    public static *** v(...);
+    public static *** i(...);
+    public static *** w(...);
+    public static *** e(...);
+}
+
+# ----- Remove runtime null checks (Kotlin) -----
+# R8 can remove Kotlin's intrinsic null checks in release builds
+-assumenosideeffects class kotlin.jvm.internal.Intrinsics {
+    public static void checkNotNull(...);
+    public static void checkParameterIsNotNull(...);
+    public static void checkNotNullParameter(...);
+    public static void checkExpressionValueIsNotNull(...);
+    public static void checkNotNullExpressionValue(...);
+    public static void checkReturnedValueIsNotNull(...);
+    public static void checkFieldIsNotNull(...);
+}
