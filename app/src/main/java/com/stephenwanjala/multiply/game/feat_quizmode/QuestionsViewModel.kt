@@ -8,16 +8,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.stephenwanjala.multiply.game.models.MathQuestion
 import com.stephenwanjala.multiply.game.models.QuizDifficulty
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
-@HiltViewModel
-class QuestionsViewModel @Inject constructor(
+class QuestionsViewModel(
     private val dataStore: DataStore<Preferences>
 ) : ViewModel() {
     private val _state = MutableStateFlow(QuestionsState())
@@ -34,6 +31,7 @@ class QuestionsViewModel @Inject constructor(
             }
         }
     }
+
     fun onAction(action: QuestionAction) {
         when (action) {
             is QuestionAction.SelectAnswer -> {
@@ -46,16 +44,19 @@ class QuestionsViewModel @Inject constructor(
                     )
                 }
             }
+
             QuestionAction.SubmitAnswer -> {
                 submitAnswers()
             }
+
             QuestionAction.NextQuestion -> {
                 _state.update { state ->
                     val currentIndex = state.currentQuestionIndex
                     val lastIndex = state.questions.lastIndex
                     val safeCurrentIndex = currentIndex.coerceIn(0, maxOf(lastIndex, 0))
                     // Move to next only if not at last
-                    val nextIndex = if (safeCurrentIndex < lastIndex) safeCurrentIndex + 1 else safeCurrentIndex
+                    val nextIndex =
+                        if (safeCurrentIndex < lastIndex) safeCurrentIndex + 1 else safeCurrentIndex
                     state.copy(
                         currentQuestionIndex = nextIndex,
                         currentQuestion = state.questions.getOrNull(nextIndex),
@@ -65,6 +66,7 @@ class QuestionsViewModel @Inject constructor(
                     )
                 }
             }
+
             QuestionAction.PreviousQuestion -> {
                 _state.update { state ->
                     val currentIndex = state.currentQuestionIndex
@@ -77,6 +79,7 @@ class QuestionsViewModel @Inject constructor(
                     )
                 }
             }
+
             is QuestionAction.UpdateLevel -> {
                 setDifficulty(action.level)
             }
@@ -86,7 +89,8 @@ class QuestionsViewModel @Inject constructor(
     companion object {
         private val LEVEL_KEY = intPreferencesKey("QuizDifficulty")
     }
-    private  fun setUpQuestions(){
+
+    private fun setUpQuestions() {
         val questions = generateQuestions(state.value.level)
         _state.update {
             it.copy(
@@ -158,5 +162,5 @@ sealed interface QuestionAction {
     data object SubmitAnswer : QuestionAction
     data object NextQuestion : QuestionAction
     data object PreviousQuestion : QuestionAction
-    data class UpdateLevel(val level: QuizDifficulty):QuestionAction
+    data class UpdateLevel(val level: QuizDifficulty) : QuestionAction
 }

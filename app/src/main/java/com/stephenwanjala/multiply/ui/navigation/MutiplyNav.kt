@@ -2,7 +2,6 @@ package com.stephenwanjala.multiply.ui.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -23,15 +22,16 @@ import com.stephenwanjala.multiply.game.feat_quizmode.QuestionsViewModel
 import com.stephenwanjala.multiply.game.models.ModeDifficulty
 import com.stephenwanjala.multiply.game.models.QuizDifficulty
 import kotlinx.serialization.Serializable
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun MultiplyNav(
     navHostController: NavHostController,
     modifier: Modifier = Modifier
 ) {
-    val viewModel = hiltViewModel<GameViewModel>()
+    val viewModel = koinViewModel<GameViewModel>()
     val state = viewModel.state.collectAsStateWithLifecycle().value
-    val questionsVm = hiltViewModel<QuestionsViewModel>()
+    val questionsVm = koinViewModel<QuestionsViewModel>()
     NavHost(
         navController = navHostController,
         startDestination = MultiplyDestination.SelectGameMode,
@@ -108,7 +108,7 @@ fun MultiplyNav(
         }
 
         composable<MultiplyDestination.GameDestination> {
-            GameScreen(viewModel = hiltViewModel(),
+            GameScreen(viewModel = koinViewModel(),
                 onNavigateUp = navHostController::navigateUp,
                 toSettings = {
                     navHostController.navigate(MultiplyDestination.SettingsDestination)

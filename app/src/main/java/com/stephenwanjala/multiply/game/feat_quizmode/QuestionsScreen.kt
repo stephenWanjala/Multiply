@@ -1,9 +1,7 @@
 package com.stephenwanjala.multiply.game.feat_quizmode
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
@@ -31,7 +29,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides.Companion.Bottom
 import androidx.compose.foundation.layout.WindowInsetsSides.Companion.Horizontal
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -45,7 +42,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -74,7 +70,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
@@ -299,7 +294,9 @@ private fun LargeNumberQuestionContent(
                         textAlign = TextAlign.Center
                     ),
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.padding(20.dp).offset(y = (-animatedOffset).dp)
+                    modifier = Modifier
+                        .padding(20.dp)
+                        .offset(y = (-animatedOffset).dp)
                 )
             }
 
@@ -356,11 +353,13 @@ private fun LargeNumberAnswerOption(
             transitionSpec = {
                 (fadeIn(animationSpec = tween(220, delayMillis = 90)) +
                         scaleIn(animationSpec = tween(220, delayMillis = 90), initialScale = 0.9f))
-                    .togetherWith(fadeOut(animationSpec = tween(90)) +
-                            scaleOut(animationSpec = tween(90), targetScale = 0.9f))
+                    .togetherWith(
+                        fadeOut(animationSpec = tween(90)) +
+                                scaleOut(animationSpec = tween(90), targetScale = 0.9f)
+                    )
             },
             label = "LargeNumberAnswerOptionTextAnimation"
-        ){answer->
+        ) { answer ->
             Text(
                 text = answer,
                 style = MaterialTheme.typography.titleLarge.copy(
@@ -404,9 +403,14 @@ private fun ProgressIndicators(state: QuestionsState) {
                     targetState = emoji,
                     transitionSpec = {
                         (fadeIn(animationSpec = tween(220, delayMillis = 90)) +
-                                scaleIn(animationSpec = tween(220, delayMillis = 90), initialScale = 0.9f))
-                            .togetherWith(fadeOut(animationSpec = tween(90)) +
-                                    scaleOut(animationSpec = tween(90), targetScale = 0.9f))
+                                scaleIn(
+                                    animationSpec = tween(220, delayMillis = 90),
+                                    initialScale = 0.9f
+                                ))
+                            .togetherWith(
+                                fadeOut(animationSpec = tween(90)) +
+                                        scaleOut(animationSpec = tween(90), targetScale = 0.9f)
+                            )
                     },
                     label = "emojiTextAnimation",
                     modifier = Modifier.scale(scale)
@@ -428,9 +432,14 @@ private fun ProgressIndicators(state: QuestionsState) {
                 targetState = currentEmoji,
                 transitionSpec = {
                     (fadeIn(animationSpec = tween(220, delayMillis = 90)) +
-                            scaleIn(animationSpec = tween(220, delayMillis = 90), initialScale = 0.9f))
-                        .togetherWith(fadeOut(animationSpec = tween(90)) +
-                                scaleOut(animationSpec = tween(90), targetScale = 0.9f))
+                            scaleIn(
+                                animationSpec = tween(220, delayMillis = 90),
+                                initialScale = 0.9f
+                            ))
+                        .togetherWith(
+                            fadeOut(animationSpec = tween(90)) +
+                                    scaleOut(animationSpec = tween(90), targetScale = 0.9f)
+                        )
                 },
                 label = "currentEmojiAnimation",
                 modifier = Modifier.scale(scale)
@@ -491,8 +500,10 @@ private fun AnswerParticle(
             transitionSpec = {
                 (fadeIn(animationSpec = tween(220, delayMillis = 90)) +
                         scaleIn(animationSpec = tween(220, delayMillis = 90), initialScale = 0.9f))
-                    .togetherWith(fadeOut(animationSpec = tween(90)) +
-                            scaleOut(animationSpec = tween(90), targetScale = 0.9f))
+                    .togetherWith(
+                        fadeOut(animationSpec = tween(90)) +
+                                scaleOut(animationSpec = tween(90), targetScale = 0.9f)
+                    )
             },
             label = "answerTextAnimation"
         ) { targetNumberText ->

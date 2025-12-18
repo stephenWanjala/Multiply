@@ -5,23 +5,20 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
-import dagger.Module
-import dagger.Provides
-import dagger.hilt.InstallIn
-import dagger.hilt.components.SingletonComponent
-import javax.inject.Singleton
+import com.stephenwanjala.multiply.game.feat_bubblemode.GameViewModel
+import com.stephenwanjala.multiply.game.feat_quizmode.QuestionsViewModel
+import org.koin.core.module.dsl.viewModelOf
+import org.koin.dsl.module
 
-@Module
-@InstallIn(SingletonComponent::class)
-object AppModule {
-    private const val MULTIPLYPREFRENCES ="MULTIPLYPREFRENCES"
+private const val MULTIPLY_PREFERENCES = "MULTIPLYPREFRENCES"
 
-    @Provides
-    @Singleton
-    fun provideDataStorePreferences(app: Application): DataStore<Preferences> =
+val appModule = module {
+    single<DataStore<Preferences>> {
+        val app: Application = get()
         PreferenceDataStoreFactory.create(
-            produceFile = {
-                app.preferencesDataStoreFile(MULTIPLYPREFRENCES)
-            }
+            produceFile = { app.preferencesDataStoreFile(MULTIPLY_PREFERENCES) }
         )
+    }
+    viewModelOf(::QuestionsViewModel)
+    viewModelOf(::GameViewModel)
 }

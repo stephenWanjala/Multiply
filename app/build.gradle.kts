@@ -5,8 +5,8 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.hilt.gralde.plugin)
     alias(libs.plugins.kotlin.ksp)
+    alias(libs.plugins.stability.analyzer)
 }
 
 android {
@@ -70,11 +70,11 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
-    implementation(libs.bundles.hilt)
+    implementation(platform(libs.koin.bom))
+    implementation(libs.bundles.koin)
     implementation(libs.androidx.material3.adaptive.navigation.suite)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.compose.material3.adaptive.navigation)
-    ksp(libs.hilt.compiler)
     implementation(libs.kotlin.serialization.kotlinx.json)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.compose.material.icons.extended)

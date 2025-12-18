@@ -9,7 +9,6 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,11 +16,10 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 import kotlin.random.Random
 
-@HiltViewModel
-class GameViewModel @Inject constructor(
+
+class GameViewModel(
     private val dataStore: DataStore<Preferences>
 ) : ViewModel() {
 
@@ -36,11 +34,12 @@ class GameViewModel @Inject constructor(
     var showGameOverDialog by mutableStateOf(false)
         private set
 
-    fun onAction(action: GameAction){
-        when(action){
+    fun onAction(action: GameAction) {
+        when (action) {
             GameAction.ResetGameSettings -> {
 
             }
+
             is GameAction.UpdateDifficulty -> {
                 setDifficulty(action.difficulty)
             }
@@ -50,8 +49,9 @@ class GameViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             dataStore.data.collect { preferences ->
-                val savedDifficulty = preferences[DIFFICULTY_KEY]?.let { Difficulty.entries[it] } ?: Difficulty.EASY
-                val score =preferences[HIGH_SCORE_KEY] ?: 0
+                val savedDifficulty =
+                    preferences[DIFFICULTY_KEY]?.let { Difficulty.entries[it] } ?: Difficulty.EASY
+                val score = preferences[HIGH_SCORE_KEY] ?: 0
                 _state.update { it.copy(selectedDifficulty = savedDifficulty, highScore = score) }
 
             }
@@ -313,8 +313,6 @@ class GameViewModel @Inject constructor(
     }
 
 
-
-
     companion object {
         private val HIGH_SCORE_KEY = intPreferencesKey("high_score")
         private val DIFFICULTY_KEY = intPreferencesKey("difficulty")
@@ -353,7 +351,7 @@ enum class Difficulty {
 }
 
 
-sealed interface GameAction{
-    data object ResetGameSettings: GameAction
-    data class UpdateDifficulty(val difficulty: Difficulty): GameAction
+sealed interface GameAction {
+    data object ResetGameSettings : GameAction
+    data class UpdateDifficulty(val difficulty: Difficulty) : GameAction
 }
