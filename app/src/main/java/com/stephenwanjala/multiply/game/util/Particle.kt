@@ -1,4 +1,4 @@
-package com.stephenwanjala.multiply.game.utlis
+package com.stephenwanjala.multiply.game.util
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.ui.graphics.Color

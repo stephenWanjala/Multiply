@@ -1,26 +1,22 @@
 package com.stephenwanjala.multiply.game.feat_bubblemode
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.intPreferencesKey
+import com.stephenwanjala.multiply.core.data.GamePreferencesRepository
+import com.stephenwanjala.multiply.game.models.BubbleMathDifficulty
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 
-
 class GameViewModel(
-    private val dataStore: DataStore<Preferences>
+    private val repository: GamePreferencesRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(GameState())
@@ -30,61 +26,64 @@ class GameViewModel(
         _state.value
     )
 
+    private val _effects = Channel<BubbleGameEffect>(Channel.BUFFERED)
+    val effects = _effects.receiveAsFlow()
+
     private var gameJob: Job? = null
-    var showGameOverDialog by mutableStateOf(false)
-        private set
+    private var pauseStartTime: Long = 0L
 
-    fun onAction(action: GameAction) {
-        when (action) {
-            GameAction.ResetGameSettings -> {
-
-            }
-
-            is GameAction.UpdateDifficulty -> {
-                setDifficulty(action.difficulty)
-            }
+    fun onEvent(event: BubbleGameEvent) {
+        when (event) {
+            BubbleGameEvent.StartGame -> startGame()
+            BubbleGameEvent.PauseGame -> pauseGame()
+            BubbleGameEvent.ResumeGame -> resumeGame()
+            BubbleGameEvent.RestartGame -> restartGame()
+            is BubbleGameEvent.SubmitAnswer -> submitAnswer(event.answer)
+            is BubbleGameEvent.UpdateGameAreaHeight -> updateGameAreaHeight(event.height)
+            is BubbleGameEvent.UpdateScreenHeight -> updateScreenHeight(event.height)
+            is BubbleGameEvent.UpdateDifficulty -> setDifficulty(event.difficulty)
+            BubbleGameEvent.ResetSettings -> { /* reserved for future use */ }
+            BubbleGameEvent.DismissGameOver -> _state.update { it.copy(showGameOverDialog = false) }
         }
     }
 
     init {
         viewModelScope.launch {
-            dataStore.data.collect { preferences ->
-                val savedDifficulty =
-                    preferences[DIFFICULTY_KEY]?.let { Difficulty.entries[it] } ?: Difficulty.EASY
-                val score = preferences[HIGH_SCORE_KEY] ?: 0
-                _state.update { it.copy(selectedDifficulty = savedDifficulty, highScore = score) }
-
+            launch {
+                repository.bubbleDifficulty.collect { difficulty ->
+                    _state.update { it.copy(selectedDifficulty = difficulty) }
+                }
+            }
+            launch {
+                repository.bubbleHighScore.collect { score ->
+                    _state.update { it.copy(highScore = score) }
+                }
             }
         }
     }
 
-    private fun setDifficulty(difficulty: Difficulty) {
+    private fun setDifficulty(difficulty: BubbleMathDifficulty) {
         _state.update { it.copy(selectedDifficulty = difficulty) }
         viewModelScope.launch {
-            dataStore.edit { prefs ->
-                prefs[DIFFICULTY_KEY] = difficulty.ordinal
-            }
+            repository.saveBubbleDifficulty(difficulty)
         }
     }
 
     private suspend fun updateHighScore(newScore: Int) {
         if (newScore > _state.value.highScore) {
-            dataStore.edit { preferences ->
-                preferences[HIGH_SCORE_KEY] = newScore
-            }
+            repository.saveBubbleHighScore(newScore)
             _state.update { it.copy(highScore = newScore) }
         }
     }
 
-    fun startGame() {
+    private fun startGame() {
         if (gameJob?.isActive == true) return
 
-        showGameOverDialog = false
         gameJob?.cancel()
         val speed = when (_state.value.selectedDifficulty) {
-            Difficulty.EASY -> 0.15f
-            Difficulty.MEDIUM -> 0.2f
-            Difficulty.HARD -> 0.21f
+            BubbleMathDifficulty.EASY -> 0.15f
+            BubbleMathDifficulty.MEDIUM -> 0.2f
+            BubbleMathDifficulty.HARD -> 0.21f
         }
 
         _state.update {
@@ -95,10 +94,11 @@ class GameViewModel(
                 problemCounter = 0,
                 currentProblem = null,
                 isPaused = false,
-                pauseStartTime = 0L,
+                showGameOverDialog = false,
                 gameSpeed = speed
             )
         }
+        pauseStartTime = 0L
 
         gameJob = viewModelScope.launch {
             while (_state.value.gameActive) {
@@ -116,9 +116,9 @@ class GameViewModel(
     private fun generateNewProblem() {
         val difficulty = _state.value.selectedDifficulty
         val (min, max) = when (difficulty) {
-            Difficulty.EASY -> Pair(1, 9)
-            Difficulty.MEDIUM -> Pair(1, 12)
-            Difficulty.HARD -> Pair(1, 15)
+            BubbleMathDifficulty.EASY -> Pair(1, 9)
+            BubbleMathDifficulty.MEDIUM -> Pair(1, 12)
+            BubbleMathDifficulty.HARD -> Pair(1, 15)
         }
         val num1 = Random.nextInt(min, max + 1)
         val num2 = Random.nextInt(min, max + 1)
@@ -146,9 +146,9 @@ class GameViewModel(
         val choices = mutableSetOf(correctAnswer)
         while (choices.size < 4) {
             val wrongAnswer = when (difficulty) {
-                Difficulty.EASY -> generateEasyAnswer(correctAnswer)
-                Difficulty.MEDIUM -> generateMediumAnswer(correctAnswer)
-                Difficulty.HARD -> generateHardAnswer(correctAnswer)
+                BubbleMathDifficulty.EASY -> generateEasyAnswer(correctAnswer)
+                BubbleMathDifficulty.MEDIUM -> generateMediumAnswer(correctAnswer)
+                BubbleMathDifficulty.HARD -> generateHardAnswer(correctAnswer)
             }
             if (wrongAnswer > 0) choices.add(wrongAnswer)
         }
@@ -179,7 +179,7 @@ class GameViewModel(
         }
     }
 
-    fun updateGameAreaHeight(height: Float) {
+    private fun updateGameAreaHeight(height: Float) {
         _state.update {
             it.copy(
                 screenHeight = height,
@@ -220,17 +220,18 @@ class GameViewModel(
             it.copy(
                 gameActive = false,
                 isPaused = false,
-                pauseStartTime = 0L
+                showGameOverDialog = true
             )
         }
         gameJob?.cancel()
-        showGameOverDialog = true
+        pauseStartTime = 0L
         viewModelScope.launch {
             updateHighScore(_state.value.score)
+            _effects.send(BubbleGameEffect.PlayGameOverHaptic)
         }
     }
 
-    fun submitAnswer(selectedAnswer: Int) {
+    private fun submitAnswer(selectedAnswer: Int) {
         if (!_state.value.gameActive || _state.value.isPaused) return
         _state.value.currentProblem?.let { problem ->
             if (selectedAnswer == problem.answer) {
@@ -240,6 +241,7 @@ class GameViewModel(
                         currentProblem = null
                     )
                 }
+                viewModelScope.launch { _effects.send(BubbleGameEffect.PlayCorrectAnswerHaptic) }
             } else {
                 _state.update {
                     it.copy(
@@ -247,6 +249,7 @@ class GameViewModel(
                         currentProblem = null
                     )
                 }
+                viewModelScope.launch { _effects.send(BubbleGameEffect.PlayWrongAnswerHaptic) }
                 if (_state.value.lives <= 0) {
                     endGame()
                 }
@@ -254,7 +257,7 @@ class GameViewModel(
         }
     }
 
-    fun updateScreenHeight(height: Float) {
+    private fun updateScreenHeight(height: Float) {
         _state.update {
             it.copy(
                 screenHeight = height,
@@ -264,40 +267,29 @@ class GameViewModel(
         }
     }
 
-    fun pauseGame() {
+    private fun pauseGame() {
         if (!_state.value.gameActive || _state.value.isPaused) return
-        _state.update {
-            it.copy(
-                isPaused = true,
-                pauseStartTime = System.currentTimeMillis()
-            )
-        }
+        pauseStartTime = System.currentTimeMillis()
+        _state.update { it.copy(isPaused = true) }
     }
 
-    fun resumeGame() {
+    private fun resumeGame() {
         if (!_state.value.gameActive || !_state.value.isPaused) return
-        val pauseDuration = System.currentTimeMillis() - _state.value.pauseStartTime
+        val pauseDuration = System.currentTimeMillis() - pauseStartTime
         _state.update { state ->
             val updatedProblem = state.currentProblem?.let { problem ->
                 problem.copy(startTime = problem.startTime + pauseDuration)
             }
             state.copy(
                 isPaused = false,
-                pauseStartTime = 0L,
                 currentProblem = updatedProblem
             )
         }
+        pauseStartTime = 0L
     }
-    /*
-    Ensure any running game loop is stopped
-     Stop current game
-     Reset game speed
-     Start a new game with fresh parameters
-     */
 
-    fun reStartGame() {
+    private fun restartGame() {
         gameJob?.cancel()
-
         _state.update {
             it.copy(
                 gameActive = false,
@@ -306,19 +298,13 @@ class GameViewModel(
                 problemCounter = 0,
                 currentProblem = null,
                 isPaused = false,
-                pauseStartTime = 0L
+                showGameOverDialog = false
             )
         }
+        pauseStartTime = 0L
         startGame()
     }
-
-
-    companion object {
-        private val HIGH_SCORE_KEY = intPreferencesKey("high_score")
-        private val DIFFICULTY_KEY = intPreferencesKey("difficulty")
-    }
 }
-
 
 data class GameState(
     val currentProblem: Problem? = null,
@@ -332,8 +318,8 @@ data class GameState(
     val highScore: Int = 0,
     val gameSpeed: Float = 0f,
     val isPaused: Boolean = false,
-    val pauseStartTime: Long = 0L,
-    val selectedDifficulty: Difficulty = Difficulty.EASY
+    val showGameOverDialog: Boolean = false,
+    val selectedDifficulty: BubbleMathDifficulty = BubbleMathDifficulty.EASY
 )
 
 data class Problem(
@@ -346,12 +332,21 @@ data class Problem(
     val position: Float = 0f
 )
 
-enum class Difficulty {
-    EASY, MEDIUM, HARD
+sealed interface BubbleGameEvent {
+    data object StartGame : BubbleGameEvent
+    data object PauseGame : BubbleGameEvent
+    data object ResumeGame : BubbleGameEvent
+    data object RestartGame : BubbleGameEvent
+    data class SubmitAnswer(val answer: Int) : BubbleGameEvent
+    data class UpdateGameAreaHeight(val height: Float) : BubbleGameEvent
+    data class UpdateScreenHeight(val height: Float) : BubbleGameEvent
+    data class UpdateDifficulty(val difficulty: BubbleMathDifficulty) : BubbleGameEvent
+    data object ResetSettings : BubbleGameEvent
+    data object DismissGameOver : BubbleGameEvent
 }
 
-
-sealed interface GameAction {
-    data object ResetGameSettings : GameAction
-    data class UpdateDifficulty(val difficulty: Difficulty) : GameAction
+sealed interface BubbleGameEffect {
+    data object PlayCorrectAnswerHaptic : BubbleGameEffect
+    data object PlayWrongAnswerHaptic : BubbleGameEffect
+    data object PlayGameOverHaptic : BubbleGameEffect
 }

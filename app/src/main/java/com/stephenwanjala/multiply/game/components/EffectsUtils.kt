@@ -171,12 +171,18 @@ private class NeumorphicShadowNode(
 
 // Background Effects
 @Composable
-fun Modifier.glowingOrbs() =
+fun Modifier.glowingOrbs(
+    orbColors: List<Color> = listOf(
+        Color(0xFF8A2BE2),
+        Color(0xFF00B4D8),
+        Color(0xFFE040FB)
+    )
+) =
     this.then(Modifier.drawBehind {
         listOf(
-            Pair(0.2f to 0.3f, Color(0xFF8A2BE2)),
-            Pair(0.7f to 0.1f, Color(0xFF00F9FF)),
-            Pair(0.5f to 0.8f, Color(0xFFFF4081))
+            Pair(0.2f to 0.3f, orbColors.getOrElse(0) { Color(0xFF8A2BE2) }),
+            Pair(0.7f to 0.1f, orbColors.getOrElse(1) { Color(0xFF00B4D8) }),
+            Pair(0.5f to 0.8f, orbColors.getOrElse(2) { Color(0xFFE040FB) })
         ).forEach { (position, color) ->
             drawCircle(
                 brush = Brush.radialGradient(

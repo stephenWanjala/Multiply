@@ -1,73 +1,69 @@
 package com.stephenwanjala.multiply.game.feat_quizmode
 
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.intPreferencesKey
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import com.stephenwanjala.multiply.core.data.GamePreferencesRepository
 import com.stephenwanjala.multiply.game.models.MathQuestion
 import com.stephenwanjala.multiply.game.models.QuizDifficulty
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class QuestionsViewModel(
-    private val dataStore: DataStore<Preferences>
+    private val repository: GamePreferencesRepository
 ) : ViewModel() {
     private val _state = MutableStateFlow(QuestionsState())
     val state = _state
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), _state.value)
 
+    private val _effects = Channel<QuizEffect>(Channel.BUFFERED)
+    val effects = _effects.receiveAsFlow()
+
     init {
         viewModelScope.launch {
-            dataStore.data.collect { preferences ->
-                val savedLevel = preferences[LEVEL_KEY]?.let { QuizDifficulty.entries[it] }
-                    ?: QuizDifficulty.BEGINNER
+            repository.quizDifficulty.collect { savedLevel ->
                 _state.update { it.copy(level = savedLevel) }
                 setUpQuestions()
             }
         }
     }
 
-    fun onAction(action: QuestionAction) {
-        when (action) {
-            is QuestionAction.SelectAnswer -> {
+    fun onEvent(event: QuizEvent) {
+        when (event) {
+            is QuizEvent.SelectAnswer -> {
                 _state.update { state ->
                     val index = state.currentQuestionIndex
-                    val updatedMap = state.selectedAnswers + (index to action.answer)
+                    val updatedMap = state.selectedAnswers + (index to event.answer)
                     state.copy(
-                        selectedAnswer = action.answer,
+                        selectedAnswer = event.answer,
                         selectedAnswers = updatedMap
                     )
                 }
             }
 
-            QuestionAction.SubmitAnswer -> {
-                submitAnswers()
-            }
+            QuizEvent.SubmitAnswers -> submitAnswers()
 
-            QuestionAction.NextQuestion -> {
+            QuizEvent.NextQuestion -> {
                 _state.update { state ->
                     val currentIndex = state.currentQuestionIndex
                     val lastIndex = state.questions.lastIndex
                     val safeCurrentIndex = currentIndex.coerceIn(0, maxOf(lastIndex, 0))
-                    // Move to next only if not at last
                     val nextIndex =
                         if (safeCurrentIndex < lastIndex) safeCurrentIndex + 1 else safeCurrentIndex
                     state.copy(
                         currentQuestionIndex = nextIndex,
                         currentQuestion = state.questions.getOrNull(nextIndex),
-                        // restore previously selected answer for that question if any
                         selectedAnswer = state.selectedAnswers[nextIndex],
                         showDoneButton = nextIndex == lastIndex
                     )
                 }
             }
 
-            QuestionAction.PreviousQuestion -> {
+            QuizEvent.PreviousQuestion -> {
                 _state.update { state ->
                     val currentIndex = state.currentQuestionIndex
                     val prevIndex = (currentIndex - 1).coerceAtLeast(0)
@@ -80,14 +76,18 @@ class QuestionsViewModel(
                 }
             }
 
-            is QuestionAction.UpdateLevel -> {
-                setDifficulty(action.level)
+            is QuizEvent.UpdateLevel -> setDifficulty(event.level)
+
+            QuizEvent.RetryQuiz -> {
+                setUpQuestions()
+            }
+
+            QuizEvent.DismissRecap -> {
+                viewModelScope.launch {
+                    _effects.send(QuizEffect.NavigateHome)
+                }
             }
         }
-    }
-
-    companion object {
-        private val LEVEL_KEY = intPreferencesKey("QuizDifficulty")
     }
 
     private fun setUpQuestions() {
@@ -110,28 +110,27 @@ class QuestionsViewModel(
 
     private fun setDifficulty(difficulty: QuizDifficulty) {
         _state.update { it.copy(level = difficulty) }
-        // Immediately set up questions for the chosen level to avoid empty UI while DataStore updates
         setUpQuestions()
         viewModelScope.launch {
-            dataStore.edit { prefs ->
-                prefs[LEVEL_KEY] = difficulty.ordinal
-            }
+            repository.saveQuizDifficulty(difficulty)
         }
     }
 
     private fun submitAnswers() {
+        val currentState = state.value
+        val results = currentState.questions.mapIndexed { index, question ->
+            val userAns = currentState.selectedAnswers[index]
+            GameResult(
+                question = question.question,
+                correctAnswer = question.answer,
+                userAnswer = userAns ?: -1,
+                isCorrect = userAns == question.answer
+            )
+        }
+        _state.update { it.copy(results = results, showRecap = true) }
+        val correctCount = results.count { it.isCorrect }
         viewModelScope.launch {
-            val currentState = state.value
-            val results = currentState.questions.mapIndexed { index, question ->
-                val userAns = currentState.selectedAnswers[index]
-                GameResult(
-                    question = question.question,
-                    correctAnswer = question.answer,
-                    userAnswer = userAns ?: -1,
-                    isCorrect = userAns == question.answer
-                )
-            }
-            _state.update { it.copy(results = results, showRecap = true) }
+            _effects.send(QuizEffect.ShowScoreToast(correctCount, results.size))
         }
     }
 }
@@ -157,10 +156,17 @@ data class GameResult(
     val isCorrect: Boolean
 )
 
-sealed interface QuestionAction {
-    data class SelectAnswer(val answer: Int) : QuestionAction
-    data object SubmitAnswer : QuestionAction
-    data object NextQuestion : QuestionAction
-    data object PreviousQuestion : QuestionAction
-    data class UpdateLevel(val level: QuizDifficulty) : QuestionAction
+sealed interface QuizEvent {
+    data class SelectAnswer(val answer: Int) : QuizEvent
+    data object SubmitAnswers : QuizEvent
+    data object NextQuestion : QuizEvent
+    data object PreviousQuestion : QuizEvent
+    data class UpdateLevel(val level: QuizDifficulty) : QuizEvent
+    data object RetryQuiz : QuizEvent
+    data object DismissRecap : QuizEvent
+}
+
+sealed interface QuizEffect {
+    data class ShowScoreToast(val score: Int, val total: Int) : QuizEffect
+    data object NavigateHome : QuizEffect
 }

@@ -5,8 +5,10 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
+import com.stephenwanjala.multiply.core.data.GamePreferencesRepository
 import com.stephenwanjala.multiply.game.feat_bubblemode.GameViewModel
 import com.stephenwanjala.multiply.game.feat_quizmode.QuestionsViewModel
+import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
@@ -19,6 +21,7 @@ val appModule = module {
             produceFile = { app.preferencesDataStoreFile(MULTIPLY_PREFERENCES) }
         )
     }
+    singleOf(::GamePreferencesRepository)
     viewModelOf(::QuestionsViewModel)
     viewModelOf(::GameViewModel)
 }

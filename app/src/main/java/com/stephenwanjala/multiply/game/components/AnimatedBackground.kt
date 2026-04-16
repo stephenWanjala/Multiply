@@ -22,7 +22,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
-import com.stephenwanjala.multiply.game.utlis.randomOffset
+import com.stephenwanjala.multiply.game.util.randomOffset
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 

@@ -71,7 +71,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.stephenwanjala.multiply.R
-import com.stephenwanjala.multiply.game.components.animatedBackground
+import com.stephenwanjala.multiply.core.designsystem.component.AnimatedFloatingSymbolsBackground
 import com.stephenwanjala.multiply.game.components.glowingOrbs
 import com.stephenwanjala.multiply.game.components.neumorphicShadow
 import com.stephenwanjala.multiply.game.components.repeatLiquidBackground
@@ -132,20 +132,20 @@ fun GameModeSelectionScreen(
             .background(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        Color(0xFF2A0A45),
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
                         MaterialTheme.colorScheme.background,
-                        MaterialTheme.colorScheme.primary,
-                        Color(0xFF0A0420)
+                        MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f),
+                        MaterialTheme.colorScheme.background
                     )
                 )
             )
             .repeatLiquidBackground()
             .glowingOrbs()
     ) {
+        AnimatedFloatingSymbolsBackground(alpha = 0.3f)
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .animatedBackground()
                 .padding(24.dp)
                 // Apply predictive back animation transforms
                 .graphicsLayer(
@@ -164,7 +164,7 @@ fun GameModeSelectionScreen(
             ) {
                 NeonText(
                     text = "SELECT YOUR CHALLENGE",
-                    gradient = listOf(Color(0xFF00F9FF), Color(0xFF8A2BE2)),
+                    gradient = listOf(MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.primary),
                     modifier = Modifier
                         .weight(1f)
                         .padding(vertical = 16.dp),

@@ -1,4 +1,4 @@
-package com.stephenwanjala.multiply.game.utlis
+package com.stephenwanjala.multiply.game.util
 
 import android.graphics.drawable.BitmapDrawable
 import androidx.annotation.DrawableRes

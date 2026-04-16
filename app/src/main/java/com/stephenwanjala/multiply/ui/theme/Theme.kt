@@ -13,12 +13,15 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import com.stephenwanjala.multiply.core.designsystem.theme.LocalSpacing
+import com.stephenwanjala.multiply.core.designsystem.theme.Spacing
 
 private val DarkColorScheme = darkColorScheme(
     primary = md_theme_dark_primary,
@@ -109,10 +112,17 @@ fun MultiplyTheme(
         }
     }
 
-    MaterialExpressiveTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content,
-        motionScheme = MotionScheme.expressive(),
-    )
+    val multiplyColors = if (darkTheme) DarkMultiplyColors else LightMultiplyColors
+
+    CompositionLocalProvider(
+        LocalSpacing provides Spacing(),
+        LocalMultiplyColors provides multiplyColors
+    ) {
+        MaterialExpressiveTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            content = content,
+            motionScheme = MotionScheme.expressive(),
+        )
+    }
 }

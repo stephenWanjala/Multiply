@@ -21,16 +21,18 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import com.stephenwanjala.multiply.ui.theme.LocalMultiplyColors
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.window.core.layout.WindowWidthSizeClass
+import com.stephenwanjala.multiply.game.models.BubbleMathDifficulty
 import com.stephenwanjala.multiply.ui.theme.MultiplyTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onBackClick: () -> Unit, state: GameState, onAction: (GameAction) -> Unit) {
+fun SettingsScreen(onBackClick: () -> Unit, state: GameState, onEvent: (BubbleGameEvent) -> Unit) {
     var soundEnabled by remember { mutableStateOf(true) }
     var musicEnabled by remember { mutableStateOf(true) }
     var selectedTheme by remember { mutableStateOf("Space") }
@@ -56,7 +58,7 @@ fun SettingsScreen(onBackClick: () -> Unit, state: GameState, onAction: (GameAct
                 .background(
                     Brush.linearGradient(
                         colors = listOf(
-                            Color(0xFFE1F5FE),
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
                             MaterialTheme.colorScheme.background
                         )
                     )
@@ -72,7 +74,9 @@ fun SettingsScreen(onBackClick: () -> Unit, state: GameState, onAction: (GameAct
             ) {
                 if (adaptiveInfo.windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.COMPACT) {
                     SettingsCategory("Gameplay") {
-                        DifficultySelector(uiDiff) { onAction(GameAction.UpdateDifficulty(it.toDifficulty())) }
+                        DifficultySelector(uiDiff) {
+                            onEvent(BubbleGameEvent.UpdateDifficulty(it.toBubbleDifficulty()))
+                        }
                     }
                     SettingsCategory("Audio") {
                         SoundToggle("Sound Effects", soundEnabled) { soundEnabled = it }
@@ -84,7 +88,9 @@ fun SettingsScreen(onBackClick: () -> Unit, state: GameState, onAction: (GameAct
                 } else {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                         SettingsCategory("Gameplay", Modifier.weight(1f)) {
-                            DifficultySelector(uiDiff) { onAction(GameAction.UpdateDifficulty(it.toDifficulty())) }
+                            DifficultySelector(uiDiff) {
+                                onEvent(BubbleGameEvent.UpdateDifficulty(it.toBubbleDifficulty()))
+                            }
                         }
                         SettingsCategory("Audio", Modifier.weight(1f)) {
                             SoundToggle("Sound Effects", soundEnabled) { soundEnabled = it }
@@ -97,7 +103,10 @@ fun SettingsScreen(onBackClick: () -> Unit, state: GameState, onAction: (GameAct
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
-                Button(onClick = { /* Reset settings */ }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA000))) {
+                Button(
+                    onClick = { onEvent(BubbleGameEvent.ResetSettings) },
+                    colors = ButtonDefaults.buttonColors(containerColor = LocalMultiplyColors.current.warning)
+                ) {
                     Icon(Icons.Default.Refresh, contentDescription = "Reset")
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Reset to Default", fontSize = 18.sp)
@@ -113,7 +122,7 @@ fun SettingsCategory(title: String, modifier: Modifier = Modifier, content: @Com
         .fillMaxWidth()
         .padding(vertical = 8.dp), elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(title, fontWeight = FontWeight.Bold, color = Color(0xFF3F51B5), modifier = Modifier.padding(bottom = 16.dp))
+            Text(title, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(bottom = 16.dp))
             content()
         }
     }
@@ -138,7 +147,7 @@ fun SoundToggle(title: String, isEnabled: Boolean, onToggle: (Boolean) -> Unit) 
         .fillMaxWidth()
         .padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(title, modifier = Modifier.weight(1f))
-        Switch(checked = isEnabled, onCheckedChange = onToggle, colors = SwitchDefaults.colors(checkedThumbColor = Color(0xFF4CAF50), checkedTrackColor = Color(0xFF81C784)))
+        Switch(checked = isEnabled, onCheckedChange = onToggle, colors = SwitchDefaults.colors(checkedThumbColor = LocalMultiplyColors.current.success, checkedTrackColor = LocalMultiplyColors.current.successContainer))
     }
 }
 
@@ -158,10 +167,10 @@ fun ThemeSelector(selectedTheme: String, onThemeSelect: (String) -> Unit) {
 @Composable
 fun ThemeButton(theme: String, isSelected: Boolean, onSelect: () -> Unit) {
     val color = when (theme) {
-        "Space" -> Color(0xFF3F51B5)
-        "Jungle" -> Color(0xFF4CAF50)
-        "Ocean" -> Color(0xFF03A9F4)
-        "Candy" -> Color(0xFFE91E63)
+        "Space" -> MaterialTheme.colorScheme.primary
+        "Jungle" -> LocalMultiplyColors.current.success
+        "Ocean" -> MaterialTheme.colorScheme.secondary
+        "Candy" -> MaterialTheme.colorScheme.tertiary
         else -> Color.Gray
     }
     val scale by animateFloatAsState(if (isSelected) 1.1f else 1f, animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy))
@@ -177,16 +186,16 @@ fun ThemeButton(theme: String, isSelected: Boolean, onSelect: () -> Unit) {
     }
 }
 
-fun Difficulty.toInt() = when (this) {
-    Difficulty.EASY -> 1
-    Difficulty.MEDIUM -> 2
-    Difficulty.HARD -> 3
+fun BubbleMathDifficulty.toInt() = when (this) {
+    BubbleMathDifficulty.EASY -> 1
+    BubbleMathDifficulty.MEDIUM -> 2
+    BubbleMathDifficulty.HARD -> 3
 }
 
-fun Int.toDifficulty() = when (this) {
-    1 -> Difficulty.EASY
-    2 -> Difficulty.MEDIUM
-    else -> Difficulty.HARD
+fun Int.toBubbleDifficulty() = when (this) {
+    1 -> BubbleMathDifficulty.EASY
+    2 -> BubbleMathDifficulty.MEDIUM
+    else -> BubbleMathDifficulty.HARD
 }
 
 @PreviewLightDark

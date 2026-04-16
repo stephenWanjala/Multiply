@@ -74,11 +74,13 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFontFamilyResolver
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.painterResource
@@ -98,8 +100,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.stephenwanjala.multiply.R
 import com.stephenwanjala.multiply.game.components.FloatingSymbols
 import com.stephenwanjala.multiply.game.components.confettiEffect
+import com.stephenwanjala.multiply.ui.theme.LocalMultiplyColors
 import com.stephenwanjala.multiply.ui.theme.MultiplyTheme
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -114,10 +119,47 @@ fun GameScreen(
 ) {
     val screenSize = currentWindowSize()
     val state = viewModel.state.collectAsStateWithLifecycle().value
+    val haptic = LocalHapticFeedback.current
 
     LaunchedEffect(screenSize) {
-        viewModel.updateScreenHeight(screenSize.height.toFloat())
+        viewModel.onEvent(BubbleGameEvent.UpdateScreenHeight(screenSize.height.toFloat()))
     }
+
+    LaunchedEffect(Unit) {
+        viewModel.effects.collect { effect ->
+            when (effect) {
+                BubbleGameEffect.PlayCorrectAnswerHaptic ->
+                    haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                BubbleGameEffect.PlayWrongAnswerHaptic ->
+                    haptic.performHapticFeedback(HapticFeedbackType.Reject)
+                BubbleGameEffect.PlayGameOverHaptic ->
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            }
+        }
+    }
+
+    GameScreenContent(
+        state = state,
+        onEvent = viewModel::onEvent,
+        modifier = modifier,
+        onNavigateUp = onNavigateUp,
+        toSettings = toSettings,
+        toHowToPlay = toHowToPlay,
+        ontoHome = ontoHome
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun GameScreenContent(
+    state: GameState,
+    onEvent: (BubbleGameEvent) -> Unit,
+    modifier: Modifier = Modifier,
+    onNavigateUp: () -> Unit,
+    toSettings: () -> Unit,
+    toHowToPlay: () -> Unit,
+    ontoHome: () -> Unit
+) {
     Scaffold(topBar = {
         CenterAlignedTopAppBar(title = {
             Text(
@@ -137,8 +179,8 @@ fun GameScreen(
             }, actions = {
                 if (state.gameActive) {
                     IconButton(onClick = {
-                        if (state.isPaused) viewModel.resumeGame()
-                        else viewModel.pauseGame()
+                        if (state.isPaused) onEvent(BubbleGameEvent.ResumeGame)
+                        else onEvent(BubbleGameEvent.PauseGame)
                     }) {
                         PulsatingPauseIcon(isPaused = state.isPaused)
                     }
@@ -159,9 +201,9 @@ fun GameScreen(
                 .background(
                     brush = Brush.verticalGradient(
                         colors = listOf(
-                            Color(0xFF87CEEB),
+                            LocalMultiplyColors.current.bubbleBackground,
                             MaterialTheme.colorScheme.background,
-                            Color(0xFF4682B4)
+                            LocalMultiplyColors.current.bubbleBackground.copy(alpha = 0.7f)
                         )
                     )
                 )
@@ -171,9 +213,9 @@ fun GameScreen(
                 contentAlignment = Alignment.Center
             ) {
 
-                if (!state.gameActive) {
-                    AnimatedStartButton(viewModel)
-                } else {
+                if (!state.gameActive && !state.showGameOverDialog) {
+                    AnimatedStartButton(onStart = { onEvent(BubbleGameEvent.StartGame) })
+                } else if (state.gameActive) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -187,7 +229,7 @@ fun GameScreen(
                                 .weight(1f)
                                 .padding(bottom = 80.dp)
                                 .onSizeChanged { layoutSize ->
-                                    viewModel.updateGameAreaHeight(layoutSize.height.toFloat())
+                                    onEvent(BubbleGameEvent.UpdateGameAreaHeight(layoutSize.height.toFloat()))
                                 },
                             contentAlignment = Alignment.Center
                         ) {
@@ -200,40 +242,34 @@ fun GameScreen(
                                     modifier = Modifier
                                         .fillMaxSize()
                                         .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
-                                        .clickable { viewModel.resumeGame() },
+                                        .clickable { onEvent(BubbleGameEvent.ResumeGame) },
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    // Floating island background
                                     FloatingIslandPauseMenu(
-                                        onResume = { viewModel.resumeGame() },
-                                        onRestart = { viewModel.reStartGame() },
+                                        onResume = { onEvent(BubbleGameEvent.ResumeGame) },
+                                        onRestart = { onEvent(BubbleGameEvent.RestartGame) },
                                         onQuit = ontoHome
                                     )
-
-                                    // Animated sleeping zzz's
                                     ZzzAnimation()
-
-                                    // Floating clouds
                                     ParallaxClouds()
                                 }
                             }
                         }
 
                         AnswerButtons(state = state, submitAnswer = {
-                            viewModel.submitAnswer(it)
+                            onEvent(BubbleGameEvent.SubmitAnswer(it))
                         })
                     }
                 }
 
-                // Show game over dialog when needed
                 AnimatedVisibility(
-                    visible = viewModel.showGameOverDialog,
+                    visible = state.showGameOverDialog,
                     enter = fadeIn(),
                     exit = fadeOut(animationSpec = tween(durationMillis = 0))
                 ) {
                     GameOverDialog(
                         state = state,
-                        startGame = { viewModel.startGame() },
+                        startGame = { onEvent(BubbleGameEvent.StartGame) },
                         ontoHome = ontoHome,
                         toSettings = toSettings
                     )
@@ -281,7 +317,7 @@ fun GameOverDialog(
                 .clip(RoundedCornerShape(16.dp))
                 .background(
                     brush = Brush.linearGradient(
-                        colors = listOf(MaterialTheme.colorScheme.background, Color(0xFF87CEEB)),
+                        colors = listOf(MaterialTheme.colorScheme.background, LocalMultiplyColors.current.bubbleBackground),
                     )
                 )
                 .padding(16.dp)
@@ -302,7 +338,6 @@ fun GameOverDialog(
                     textAlign = TextAlign.Center
                 )
 
-                // Score & Mascot
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -365,7 +400,7 @@ fun AnimatedScoreText(score: Int) {
 
     LaunchedEffect(key) {
         displayScore = 0
-        delay(500) // Wait for dialog animation
+        delay(500)
         while (displayScore < score) {
             displayScore++
             delay(50)
@@ -376,7 +411,7 @@ fun AnimatedScoreText(score: Int) {
         text = "Final Score: $displayScore",
         style = MaterialTheme.typography.headlineMedium,
         fontWeight = FontWeight.Bold,
-        color = Color.Yellow,
+        color = LocalMultiplyColors.current.star,
         textAlign = TextAlign.Center
     )
 }
@@ -394,8 +429,8 @@ fun NewHighScoreText() {
     )
 
     Text(
-        text = "🎉 New High Score! 🎉",
-        color = Color(0xFFFFA500),
+        text = "New High Score!",
+        color = LocalMultiplyColors.current.warning,
         fontWeight = FontWeight.Bold,
         style = MaterialTheme.typography.titleLarge,
         modifier = Modifier.scale(scale)
@@ -427,7 +462,7 @@ fun PulsatingButton(
                 scaleY = scale
             },
         shape = MaterialTheme.shapes.medium,
-        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF32CD32))
+        colors = ButtonDefaults.buttonColors(containerColor = LocalMultiplyColors.current.success)
     ) {
         Row(
             modifier = Modifier.wrapContentWidth(),
@@ -538,7 +573,7 @@ private fun AnswerButtons(state: GameState, submitAnswer: (choice: Int) -> Unit)
 
 
 @Composable
-fun AnimatedStartButton(viewModel: GameViewModel) {
+fun AnimatedStartButton(onStart: () -> Unit) {
     val infiniteTransition = rememberInfiniteTransition()
     val scale by infiniteTransition.animateFloat(
         initialValue = 1f,
@@ -550,12 +585,11 @@ fun AnimatedStartButton(viewModel: GameViewModel) {
     )
 
     Button(
-        onClick = { viewModel.startGame() },
+        onClick = onStart,
         modifier = Modifier
             .scale(scale)
             .padding(16.dp),
         shape = MaterialTheme.shapes.medium
-//        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA500))
     ) {
         Text(
             "Start Game",
@@ -571,12 +605,11 @@ fun AnimatedStartButton(viewModel: GameViewModel) {
 fun MathBubble(state: GameState) {
     state.currentProblem?.let { problem ->
         val transition = rememberInfiniteTransition(label = "gradientTransition")
-        val totalTime = 1f / state.gameSpeed  // Calculate total time based on game speed
+        val totalTime = 1f / state.gameSpeed
 
         val elapsed = (System.currentTimeMillis() - problem.startTime) / 1000f
         val progress = (1f - (elapsed / totalTime)).coerceIn(0f, 1f)
 
-        // Pulse animation for time remaining
         val pulseAlpha by transition.animateFloat(
             initialValue = 0.3f,
             targetValue = 1f,
@@ -610,20 +643,17 @@ fun MathBubble(state: GameState) {
             val textLayoutResult = textMeasurer.measure(
                 text = AnnotatedString("${problem.num1} X ${problem.num2}"),
                 style = MaterialTheme.typography.displayMedium,
-
-                )
+            )
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val circleRadius = size.width / 2
                 val circleCenter = Offset(circleRadius, circleRadius)
 
-                // Draw background bubble
                 drawCircle(
                     color = circleColor,
                     center = circleCenter,
                     radius = circleRadius
                 )
 
-                // Draw time remaining pulse
                 drawCircle(
                     color = pulseColor,
                     center = circleCenter,
@@ -631,7 +661,6 @@ fun MathBubble(state: GameState) {
                     style = Stroke(width = 4.dp.toPx())
                 )
 
-                // Draw equation text
                 drawText(
                     textMeasurer = textMeasurer,
                     text = "${problem.num1} × ${problem.num2}",
@@ -663,6 +692,7 @@ private fun FloatingIslandPauseMenu(
         )
     )
     val imageBitmap = ImageBitmap.imageResource(R.drawable.sleeping_mascot)
+    val  color = LocalMultiplyColors.current.success
 
     Column(
         modifier = Modifier
@@ -672,16 +702,14 @@ private fun FloatingIslandPauseMenu(
                 translationY = floatOffset
             }
             .drawBehind {
-//                Island
                 drawPath(
                     path = Path().apply {
                         moveTo(0f, size.height)
                         quadraticTo(size.width / 2, size.height - 150f, size.width, size.height)
                     },
-                    color = Color(0xFF4CAF50)
+                    color =color
                 )
 
-                // Draw sleeping mascot
                 drawImage(
                     image = imageBitmap,
                     dstSize = IntSize(150, 150),
@@ -691,11 +719,9 @@ private fun FloatingIslandPauseMenu(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(Modifier.weight(1f))
-        // Pause menu buttons
         FlowColumn(
             modifier = Modifier
                 .wrapContentSize(),
-//                .background(Color.Blue.copy(alpha = 0.2f)), // For Debugging TF😂😂😒 background color
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             HoverButton(
@@ -722,7 +748,7 @@ private fun FloatingIslandPauseMenu(
 
 @Composable
 private fun ZzzAnimation() {
-    val symbols = listOf("💤", "😴", "✨", "⏸️")
+    val symbols = listOf("Z", "z", "Z", "z")
     val infiniteTransition = rememberInfiniteTransition()
 
     repeat(8) { index ->
@@ -756,7 +782,6 @@ private fun ZzzAnimation() {
         Text(
             text = symbols[index % symbols.size],
             modifier = Modifier
-//                .offset(xOffset.dp, yOffset.dp)
                 .graphicsLayer {
                     translationX = xOffset
                     translationY = yOffset
@@ -772,7 +797,6 @@ private fun ZzzAnimation() {
 private fun ParallaxClouds() {
     val infiniteTransition = rememberInfiniteTransition()
 
-    // Back layer clouds
     CloudLayer(
         speedMultiplier = 0.5f,
         scale = 0.8f,
@@ -780,7 +804,6 @@ private fun ParallaxClouds() {
         infiniteTransition = infiniteTransition
     )
 
-    // Front layer clouds
     CloudLayer(
         speedMultiplier = 1.2f,
         scale = 1f,
@@ -862,8 +885,8 @@ fun HoverButton(
                 }
             },
         colors = ButtonDefaults.buttonColors(
-            containerColor = Color(0xFFFFD700),
-            contentColor = Color.Black
+            containerColor = LocalMultiplyColors.current.star,
+            contentColor = MaterialTheme.colorScheme.onSurface
         ),
         elevation = ButtonDefaults.buttonElevation(
             defaultElevation = 4.dp,
