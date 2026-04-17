@@ -1,15 +1,9 @@
 package com.stephenwanjala.multiply.game.feat_quizmode
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -21,6 +15,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,21 +23,19 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides.Companion.Bottom
-import androidx.compose.foundation.layout.WindowInsetsSides.Companion.Horizontal
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -53,22 +46,10 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.ProgressIndicatorDefaults
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -86,14 +67,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.stephenwanjala.multiply.game.components.confettiEffect
-import com.stephenwanjala.multiply.game.components.glowingOrbs
-import com.stephenwanjala.multiply.game.components.neumorphicShadow
+import com.stephenwanjala.multiply.game.feat_bubblemode.DuoButton
+import com.stephenwanjala.multiply.game.feat_bubblemode.darken
 import com.stephenwanjala.multiply.game.models.hasLargeNumbers
 import com.stephenwanjala.multiply.ui.theme.LocalMultiplyColors
-
-const val EMOJI_DISPLAY_THRESHOLD = 12
 
 @Composable
 fun QuestionsScreen(
@@ -106,9 +86,8 @@ fun QuestionsScreen(
     LaunchedEffect(Unit) {
         viewModel.effects.collect { effect ->
             when (effect) {
-                is QuizEffect.ShowScoreToast -> {
+                is QuizEffect.ShowScoreToast ->
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                }
                 QuizEffect.NavigateHome -> onClosePressed()
             }
         }
@@ -122,34 +101,28 @@ fun QuestionsScreen(
         )
         return
     }
-    Surface(color = MaterialTheme.colorScheme.background) {
-        Scaffold(
-            topBar = {
-                QuestionsTopAppBar(
-                    onClosePressed = onClosePressed,
-                    currentQuestionIndex = state.currentQuestionIndex,
-                    totalCount = state.questions.size
-                )
-            },
-            bottomBar = {
-                QuestionBottomBar(
-                    shouldShowPreviousButton = state.currentQuestionIndex > 0,
-                    shouldShowDoneButton = state.currentQuestionIndex == state.questions.lastIndex,
-                    isNextButtonEnabled = state.selectedAnswer != null,
-                    onPreviousPressed = { viewModel.onEvent(QuizEvent.PreviousQuestion) },
-                    onNextPressed = { viewModel.onEvent(QuizEvent.NextQuestion) },
-                    onDonePressed = { viewModel.onEvent(QuizEvent.SubmitAnswers) }
-                )
-            }
-        ) { padding ->
+
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.statusBars)
+        ) {
+            QuizHeader(
+                currentIndex = state.currentQuestionIndex,
+                totalCount = state.questions.size,
+                onClose = onClosePressed
+            )
+
             Column(
                 modifier = Modifier
-                    .padding(padding)
-                    .fillMaxSize()
-                    .glowingOrbs()
-                    .padding(24.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
                 QuestionContent(
                     state = state,
@@ -158,7 +131,75 @@ fun QuestionsScreen(
                     }
                 )
             }
+
+            QuizBottomBar(
+                showPrevious = state.currentQuestionIndex > 0,
+                isLast = state.currentQuestionIndex == state.questions.lastIndex,
+                ctaEnabled = state.selectedAnswer != null,
+                onPrevious = { viewModel.onEvent(QuizEvent.PreviousQuestion) },
+                onNext = { viewModel.onEvent(QuizEvent.NextQuestion) },
+                onDone = { viewModel.onEvent(QuizEvent.SubmitAnswers) }
+            )
         }
+    }
+}
+
+@Composable
+private fun QuizHeader(
+    currentIndex: Int,
+    totalCount: Int,
+    onClose: () -> Unit
+) {
+    val progress by animateFloatAsState(
+        targetValue = if (totalCount > 0) (currentIndex + 1) / totalCount.toFloat() else 0f,
+        animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
+        label = "quizProgress"
+    )
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .clickable(onClick = onClose),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = "Close",
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .height(14.dp)
+                .clip(RoundedCornerShape(50))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(fraction = progress.coerceIn(0f, 1f))
+                    .height(14.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(LocalMultiplyColors.current.success)
+            )
+        }
+
+        Text(
+            text = "${(currentIndex + 1).coerceAtMost(totalCount.coerceAtLeast(1))}/${totalCount.coerceAtLeast(1)}",
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Black
+        )
     }
 }
 
@@ -167,497 +208,208 @@ private fun QuestionContent(
     state: QuestionsState,
     onAnswerSelected: (Int) -> Unit
 ) {
-    val currentQuestion = state.currentQuestion
-    val hasLargeNumbers = currentQuestion?.hasLargeNumbers() ?: false
+    val currentQuestion = state.currentQuestion ?: return
+    val useColumnLayout = currentQuestion.hasLargeNumbers()
 
-    if (hasLargeNumbers) {
-        LargeNumberQuestionContent(
-            state = state,
-            onAnswerSelected = onAnswerSelected
-        )
-    } else {
-        RegularQuestionContent(
-            state = state,
-            onAnswerSelected = onAnswerSelected
-        )
-    }
-}
+    QuestionCard(question = currentQuestion.question)
 
-@Composable
-private fun RegularQuestionContent(
-    state: QuestionsState,
-    onAnswerSelected: (Int) -> Unit
-) {
-    val currentQuestion = state.currentQuestion
-    val questionLength = currentQuestion?.question?.length ?: 0
-    val infiniteTransition = rememberInfiniteTransition(label = "infiniteTransition")
-    val animatedOffset by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 8f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "animatedOffset"
-    )
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(8.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        val questionPadding = if (questionLength > 10) 16.dp else 32.dp
-        val questionTextStyle = if (questionLength > 10)
-            MaterialTheme.typography.headlineMedium
-        else
-            MaterialTheme.typography.displayMedium
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = questionPadding)
-                .neumorphicShadow(
-                    lightColor = MaterialTheme.colorScheme.surface
-                )
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.primaryContainer,
-                            MaterialTheme.colorScheme.secondaryContainer
-                        )
-                    ),
-                    shape = RoundedCornerShape(16.dp)
-                )
-                .padding(24.dp),
-            contentAlignment = Alignment.Center
+    if (useColumnLayout) {
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            AnimatedContent(
-                targetState = currentQuestion?.question,
-                transitionSpec = {
-                    (slideInHorizontally { height -> height } + fadeIn())
-                        .togetherWith(slideOutHorizontally { height -> -height } + fadeOut())
-                },
-                label = "questionTextAnimation"
-            ) { targetQuestionText ->
-                Text(
-                    text = targetQuestionText ?: "Loading...",
-                    style = questionTextStyle.copy(
-                        fontWeight = FontWeight.ExtraBold,
-                        textAlign = TextAlign.Center
-                    ),
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.offset(y = (-animatedOffset).dp)
+            itemsIndexed(currentQuestion.allAnswers) { _, answer ->
+                AnswerOption(
+                    text = answer.toString(),
+                    isSelected = answer == state.selectedAnswer,
+                    onClick = { onAnswerSelected(answer) },
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
         }
-
+    } else {
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(currentQuestion?.allAnswers?.size ?: 0) { index ->
-                val answer = currentQuestion?.allAnswers?.get(index) ?: 0
-                val isSelected = answer == state.selectedAnswer
-
-                AnswerParticle(
-                    number = answer,
-                    isSelected = isSelected,
-                    onClick = { onAnswerSelected(answer) }
-                )
-            }
-        }
-
-        ProgressIndicators(state)
-    }
-}
-
-@Composable
-private fun LargeNumberQuestionContent(
-    state: QuestionsState,
-    onAnswerSelected: (Int) -> Unit
-) {
-    val currentQuestion = state.currentQuestion
-    val infiniteTransition = rememberInfiniteTransition(label = "infiniteTransition")
-    val animatedOffset by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 8f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "animatedOffset"
-    )
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(8.dp),
-        verticalArrangement = Arrangement.SpaceBetween,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-            ) {
-                Text(
-                    text = currentQuestion?.question ?: "Loading...",
-                    style = MaterialTheme.typography.headlineMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
-                    ),
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+            itemsIndexed(currentQuestion.allAnswers) { _, answer ->
+                AnswerOption(
+                    text = answer.toString(),
+                    isSelected = answer == state.selectedAnswer,
+                    onClick = { onAnswerSelected(answer) },
                     modifier = Modifier
-                        .padding(20.dp)
-                        .offset(y = (-animatedOffset).dp)
+                        .fillMaxWidth()
+                        .height(84.dp)
                 )
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            LazyColumn(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(currentQuestion?.allAnswers?.size ?: 0) { index ->
-                    val answer = currentQuestion?.allAnswers?.get(index) ?: 0
-                    val isSelected = answer == state.selectedAnswer
-
-                    LargeNumberAnswerOption(
-                        number = answer,
-                        isSelected = isSelected,
-                        onClick = { onAnswerSelected(answer) }
-                    )
-                }
-            }
         }
-
-        ProgressIndicators(state)
     }
 }
 
 @Composable
-private fun LargeNumberAnswerOption(
-    number: Int,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    val backgroundColor by animateColorAsState(
-        targetValue = if (isSelected) MaterialTheme.colorScheme.primary
-        else MaterialTheme.colorScheme.surfaceVariant,
-        animationSpec = spring(stiffness = Spring.StiffnessLow),
-        label = "largeNumberAnswerColor"
-    )
-
+private fun QuestionCard(question: String) {
+    val primary = MaterialTheme.colorScheme.primary
+    val tertiary = MaterialTheme.colorScheme.tertiary
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(60.dp)
+            .clip(RoundedCornerShape(28.dp))
             .background(
-                color = backgroundColor,
-                shape = RoundedCornerShape(12.dp)
-            )
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        AnimatedContent(
-            targetState = number.toString(),
-            transitionSpec = {
-                (fadeIn(animationSpec = tween(220, delayMillis = 90)) +
-                        scaleIn(animationSpec = tween(220, delayMillis = 90), initialScale = 0.9f))
-                    .togetherWith(
-                        fadeOut(animationSpec = tween(90)) +
-                                scaleOut(animationSpec = tween(90), targetScale = 0.9f)
+                Brush.linearGradient(
+                    colors = listOf(
+                        primary.copy(alpha = 0.92f),
+                        tertiary.copy(alpha = 0.88f)
                     )
-            },
-            label = "LargeNumberAnswerOptionTextAnimation"
-        ) { answer ->
-            Text(
-                text = answer,
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.Medium
-                ),
-                color = if (isSelected) MaterialTheme.colorScheme.onPrimary
-                else MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                maxLines = 1
-            )
-
-        }
-    }
-}
-
-@Composable
-private fun ProgressIndicators(state: QuestionsState) {
-    Row(
-        modifier = Modifier.padding(top = 24.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        if (state.questions.size <= EMOJI_DISPLAY_THRESHOLD) {
-            repeat(state.questions.size) { index ->
-                val isCurrent = index == state.currentQuestionIndex
-                val indicator = when {
-                    index < state.currentQuestionIndex -> "+"
-                    isCurrent -> ">"
-                    else -> "-"
-                }
-                val scale by animateFloatAsState(
-                    targetValue = if (isCurrent) 1.5f else 1f,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessLow
-                    ),
-                    label = "indicatorScaleAnimation"
                 )
-
-                AnimatedContent(
-                    targetState = indicator,
-                    transitionSpec = {
-                        (fadeIn(animationSpec = tween(220, delayMillis = 90)) +
-                                scaleIn(
-                                    animationSpec = tween(220, delayMillis = 90),
-                                    initialScale = 0.9f
-                                ))
-                            .togetherWith(
-                                fadeOut(animationSpec = tween(90)) +
-                                        scaleOut(animationSpec = tween(90), targetScale = 0.9f)
-                            )
-                    },
-                    label = "indicatorTextAnimation",
-                    modifier = Modifier.scale(scale)
-                ) { targetIndicator ->
-                    Text(
-                        text = targetIndicator,
-                        color = when (targetIndicator) {
-                            "+" -> MaterialTheme.colorScheme.primary
-                            ">" -> MaterialTheme.colorScheme.tertiary
-                            else -> MaterialTheme.colorScheme.outline
-                        },
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        } else {
-            Text(
-                text = "${state.currentQuestionIndex + 1} / ${state.questions.size}",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
             )
-        }
-    }
-}
-
-@Composable
-private fun AnswerParticle(
-    number: Int,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    val animatedColor by animateColorAsState(
-        targetValue = if (isSelected) MaterialTheme.colorScheme.primary
-        else MaterialTheme.colorScheme.surfaceVariant,
-        animationSpec = spring(stiffness = Spring.StiffnessLow),
-        label = "answerParticleColor"
-    )
-
-    val animatedElevation by animateDpAsState(
-        targetValue = if (isSelected) 16.dp else 8.dp,
-        label = "answerParticleElevation"
-    )
-
-    val shape = RoundedCornerShape(16.dp)
-
-    Box(
-        modifier = Modifier
-            .padding(16.dp)
-            .fillMaxWidth()
-            .height(80.dp)
-            .neumorphicShadow(
-                offset = 8.dp,
-                blurRadius = animatedElevation,
-                shape = shape,
-                inverted = true
-            )
-            .background(
-                color = animatedColor,
-                shape = shape
-            )
-            .clip(shape)
-            .clickable(onClick = onClick),
+            .padding(horizontal = 20.dp, vertical = 28.dp),
         contentAlignment = Alignment.Center
     ) {
-        AnimatedContent(
-            targetState = number.toString(),
-            transitionSpec = {
-                (fadeIn(animationSpec = tween(220, delayMillis = 90)) +
-                        scaleIn(animationSpec = tween(220, delayMillis = 90), initialScale = 0.9f))
-                    .togetherWith(
-                        fadeOut(animationSpec = tween(90)) +
-                                scaleOut(animationSpec = tween(90), targetScale = 0.9f)
-                    )
-            },
-            label = "answerTextAnimation"
-        ) { targetNumberText ->
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = targetNumberText,
-                style = MaterialTheme.typography.headlineLarge.copy(
+                text = "SOLVE THIS",
+                color = Color.White.copy(alpha = 0.85f),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 1.4.sp
+            )
+            Spacer(Modifier.height(10.dp))
+            AnimatedContent(
+                targetState = question,
+                transitionSpec = {
+                    (slideInHorizontally { it } + fadeIn())
+                        .togetherWith(slideOutHorizontally { -it } + fadeOut())
+                },
+                label = "questionText"
+            ) { text ->
+                Text(
+                    text = text,
+                    color = Color.White,
+                    fontSize = 44.sp,
                     fontWeight = FontWeight.Black,
-                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary
-                    else MaterialTheme.colorScheme.onSurfaceVariant
-                ),
-                modifier = Modifier.scale(if (isSelected) 1.15f else 1f),
-                textAlign = TextAlign.Center,
-                maxLines = 1
-            )
+                    textAlign = TextAlign.Center,
+                    lineHeight = 52.sp
+                )
+            }
         }
     }
 }
 
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun QuestionsTopAppBar(
-    modifier: Modifier = Modifier,
-    onClosePressed: () -> Unit,
-    currentQuestionIndex: Int,
-    totalCount: Int
-) {
-    Column(modifier = modifier.fillMaxWidth()) {
-
-        CenterAlignedTopAppBar(
-            title = {
-                TopAppBarTitle(
-                    questionIndex = currentQuestionIndex,
-                    totalQuestionsCount = totalCount,
-                )
-            },
-            actions = {
-                IconButton(
-                    onClick = onClosePressed,
-                    modifier = Modifier.padding(4.dp)
-                ) {
-                    Icon(
-                        Icons.Filled.Close,
-                        contentDescription = "Close",
-                        tint = MaterialTheme.colorScheme.onSurface.copy(.67f)
-                    )
-                }
-            }
-        )
-
-        val animatedProgress by animateFloatAsState(
-            targetValue = if (totalCount > 0) (currentQuestionIndex + 1) / totalCount.toFloat() else 0f,
-            animationSpec = ProgressIndicatorDefaults.ProgressAnimationSpec,
-            label = "questionProgress"
-        )
-        LinearProgressIndicator(
-            progress = { animatedProgress },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp),
-            trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
-        )
-    }
-}
-
-
-@Composable
-private fun TopAppBarTitle(
-    questionIndex: Int,
-    totalQuestionsCount: Int,
+private fun AnswerOption(
+    text: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(modifier = modifier) {
-        Text(
-            text = (questionIndex + 1).toString(),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-        )
-        Text(
-            text = "of $totalQuestionsCount",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-        )
+    val haptics = LocalHapticFeedback.current
+    val accent = MaterialTheme.colorScheme.primary
+    val face = if (isSelected) accent.copy(alpha = 0.14f) else MaterialTheme.colorScheme.surface
+    val borderColor = if (isSelected) accent else MaterialTheme.colorScheme.outlineVariant
+    val stripe = if (isSelected) accent.darken(0.28f) else MaterialTheme.colorScheme.outlineVariant
+    val textColor = if (isSelected) accent else MaterialTheme.colorScheme.onSurface
+
+    val scale by animateFloatAsState(
+        targetValue = if (isSelected) 1.02f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "answerScale"
+    )
+
+    Box(
+        modifier = modifier
+            .scale(scale)
+            .clip(RoundedCornerShape(18.dp))
+            .background(stripe.copy(alpha = if (isSelected) 1f else 0.35f))
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 4.dp)
+                .clip(RoundedCornerShape(18.dp))
+                .background(face)
+                .border(2.dp, borderColor, RoundedCornerShape(18.dp))
+                .clickable {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onClick()
+                }
+                .padding(vertical = 18.dp, horizontal = 16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            AnimatedContent(
+                targetState = text,
+                transitionSpec = {
+                    (fadeIn(tween(180)) + scaleIn(tween(180), initialScale = 0.92f))
+                        .togetherWith(fadeOut(tween(120)) + scaleOut(tween(120), targetScale = 0.92f))
+                },
+                label = "answerText"
+            ) { value ->
+                Text(
+                    text = value,
+                    color = textColor,
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.Black,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1
+                )
+            }
+        }
     }
 }
 
 @Composable
-fun QuestionBottomBar(
-    shouldShowPreviousButton: Boolean,
-    shouldShowDoneButton: Boolean,
-    isNextButtonEnabled: Boolean,
-    onPreviousPressed: () -> Unit,
-    onNextPressed: () -> Unit,
-    onDonePressed: () -> Unit
+private fun QuizBottomBar(
+    showPrevious: Boolean,
+    isLast: Boolean,
+    ctaEnabled: Boolean,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit,
+    onDone: () -> Unit
 ) {
-    Surface(shadowElevation = 7.dp) {
+    Surface(
+        shadowElevation = 8.dp,
+        color = MaterialTheme.colorScheme.surface
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .windowInsetsPadding(WindowInsets.systemBars.only(Horizontal + Bottom))
-                .padding(horizontal = 16.dp, vertical = 20.dp)
+                .windowInsetsPadding(WindowInsets.navigationBars)
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            if (shouldShowPreviousButton) {
-                OutlinedButton(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp),
-                    onClick = onPreviousPressed,
-                    shape = MaterialTheme.shapes.medium
-                ) {
-                    Text(text = "Previous")
-                }
-                Spacer(modifier = Modifier.width(16.dp))
+            if (showPrevious) {
+                DuoButton(
+                    text = "Back",
+                    onClick = onPrevious,
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    fontSize = 16,
+                    height = 56.dp,
+                    modifier = Modifier.weight(1f)
+                )
             }
-            if (shouldShowDoneButton) {
-                Button(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp),
-                    onClick = onDonePressed,
-                    enabled = isNextButtonEnabled,
-                    shape = MaterialTheme.shapes.medium
-                ) {
-                    Text(text = "Done")
-                }
-            } else {
-                Button(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp),
-                    onClick = onNextPressed,
-                    enabled = isNextButtonEnabled,
-                    shape = MaterialTheme.shapes.medium
-                ) {
-                    Text(text = "Next")
-                }
-            }
+            DuoButton(
+                text = if (isLast) "Finish" else "Check",
+                onClick = if (isLast) onDone else onNext,
+                enabled = ctaEnabled,
+                containerColor = LocalMultiplyColors.current.success,
+                contentColor = Color.White,
+                leading = Icons.Default.Check,
+                fontSize = 18,
+                height = 56.dp,
+                modifier = Modifier.weight(if (showPrevious) 1.4f else 1f)
+            )
         }
     }
 }
 
-
 @Composable
-fun RecapScreen(
+private fun RecapScreen(
     results: List<GameResult>,
     onClosePressed: () -> Unit,
-    onRetry: () -> Unit = {}
+    onRetry: () -> Unit
 ) {
     val correctCount = results.count { it.isCorrect }
     val totalCount = results.size
@@ -666,359 +418,340 @@ fun RecapScreen(
 
     val scoreColor = when {
         percentage >= 90 -> multiplyColors.success
-        percentage >= 70 -> Color(0xFF2196F3)
+        percentage >= 70 -> MaterialTheme.colorScheme.primary
         percentage >= 50 -> multiplyColors.star
         else -> multiplyColors.warning
     }
 
-    val performanceTier = when {
-        percentage == 100 -> PerformanceTier("Perfect Score!", "You nailed every single one!", 3)
-        percentage >= 90 -> PerformanceTier("Outstanding!", "You're a math superstar!", 3)
-        percentage >= 70 -> PerformanceTier("Great Job!", "You're getting really good at this!", 2)
-        percentage >= 50 -> PerformanceTier("Nice Try!", "Keep going, you're improving!", 1)
-        else -> PerformanceTier("Keep Practicing!", "Every attempt makes you stronger!", 0)
+    val tier = when {
+        percentage == 100 -> RecapTier("Perfect!", "You aced every question.", 3)
+        percentage >= 90 -> RecapTier("Outstanding!", "You're a math superstar.", 3)
+        percentage >= 70 -> RecapTier("Great Job!", "You're getting really good at this.", 2)
+        percentage >= 50 -> RecapTier("Nice Try!", "Keep going — you're improving.", 1)
+        else -> RecapTier("Keep Practicing!", "Every attempt makes you stronger.", 0)
     }
 
-    // Animated score counter
     val animatedPercentage by animateFloatAsState(
         targetValue = percentage.toFloat(),
         animationSpec = tween(durationMillis = 1200, easing = FastOutSlowInEasing),
         label = "score"
     )
 
-    // Star bounce animation
-    val starScale by animateFloatAsState(
-        targetValue = 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
-        label = "starBounce"
-    )
-
-    Box(modifier = Modifier.fillMaxSize()) {
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
+    ) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .then(if (percentage >= 70) Modifier.confettiEffect(particleCount = 60) else Modifier),
+                .then(if (percentage >= 70) Modifier.confettiEffect(particleCount = 60) else Modifier)
+                .windowInsetsPadding(WindowInsets.statusBars),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Score hero section
             item {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 48.dp, bottom = 16.dp)
-                        .padding(horizontal = 24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    // Circular score indicator
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .size(180.dp)
-                            .scale(starScale)
-                    ) {
-                        Canvas(modifier = Modifier.size(180.dp)) {
-                            // Background track
-                            drawArc(
-                                color = scoreColor.copy(alpha = 0.15f),
-                                startAngle = -90f,
-                                sweepAngle = 360f,
-                                useCenter = false,
-                                style = Stroke(width = 14.dp.toPx(), cap = StrokeCap.Round)
-                            )
-                            // Animated progress arc
-                            drawArc(
-                                color = scoreColor,
-                                startAngle = -90f,
-                                sweepAngle = animatedPercentage * 3.6f,
-                                useCenter = false,
-                                style = Stroke(width = 14.dp.toPx(), cap = StrokeCap.Round)
-                            )
-                        }
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "${animatedPercentage.toInt()}%",
-                                style = MaterialTheme.typography.displayMedium,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = scoreColor
-                            )
-                            Text(
-                                text = "$correctCount / $totalCount",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    // Star rating row
-                    if (performanceTier.stars > 0) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.padding(bottom = 12.dp)
-                        ) {
-                            repeat(3) { index ->
-                                val filled = index < performanceTier.stars
-                                val delay = index * 200
-                                val scale by animateFloatAsState(
-                                    targetValue = if (filled) 1f else 0.6f,
-                                    animationSpec = tween(
-                                        durationMillis = 500,
-                                        delayMillis = delay + 800,
-                                        easing = FastOutSlowInEasing
-                                    ),
-                                    label = "star$index"
-                                )
-                                Icon(
-                                    imageVector = if (filled) Icons.Filled.Star else Icons.Filled.StarBorder,
-                                    contentDescription = null,
-                                    tint = if (filled) multiplyColors.star else MaterialTheme.colorScheme.outline,
-                                    modifier = Modifier
-                                        .size(40.dp)
-                                        .scale(scale)
-                                )
-                            }
-                        }
-                    }
-
-                    // Performance message
-                    Text(
-                        text = performanceTier.title,
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = scoreColor,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = performanceTier.subtitle,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                        textAlign = TextAlign.Center
-                    )
-                }
-            }
-
-            // Stats row
-            item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    StatCard(
-                        label = "Correct",
-                        value = "$correctCount",
-                        color = multiplyColors.success,
-                        modifier = Modifier.weight(1f)
-                    )
-                    StatCard(
-                        label = "Wrong",
-                        value = "${totalCount - correctCount}",
-                        color = multiplyColors.wrongAnswer,
-                        modifier = Modifier.weight(1f)
-                    )
-                    StatCard(
-                        label = "Accuracy",
-                        value = "$percentage%",
-                        color = scoreColor,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-
-            // Action buttons
-            item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = onClosePressed,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(52.dp),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Home", fontWeight = FontWeight.Bold)
-                    }
-                    Button(
-                        onClick = onRetry,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(52.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = scoreColor
-                        )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Refresh,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Try Again", fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-
-            // Section header for results
-            item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 24.dp, end = 24.dp, top = 20.dp, bottom = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Question Review",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-            }
-
-            // Result cards
-            itemsIndexed(results) { index, result ->
-                QuestionRecapItem(
-                    questionNumber = index + 1,
-                    result = result,
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp)
+                RecapHero(
+                    animatedPercentage = animatedPercentage,
+                    correctCount = correctCount,
+                    totalCount = totalCount,
+                    tier = tier,
+                    scoreColor = scoreColor,
+                    starColor = multiplyColors.star
                 )
             }
 
-            // Bottom spacing
             item {
-                Spacer(modifier = Modifier.height(32.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    RecapStat(
+                        label = "Correct",
+                        value = "$correctCount",
+                        accent = multiplyColors.success,
+                        modifier = Modifier.weight(1f)
+                    )
+                    RecapStat(
+                        label = "Wrong",
+                        value = "${totalCount - correctCount}",
+                        accent = multiplyColors.wrongAnswer,
+                        modifier = Modifier.weight(1f)
+                    )
+                    RecapStat(
+                        label = "Accuracy",
+                        value = "$percentage%",
+                        accent = scoreColor,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    DuoButton(
+                        text = "Home",
+                        onClick = onClosePressed,
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = MaterialTheme.colorScheme.onSurface,
+                        leading = Icons.AutoMirrored.Default.ArrowBack,
+                        fontSize = 16,
+                        height = 58.dp,
+                        modifier = Modifier.weight(1f)
+                    )
+                    DuoButton(
+                        text = "Try Again",
+                        onClick = onRetry,
+                        containerColor = multiplyColors.success,
+                        contentColor = Color.White,
+                        leading = Icons.Default.Refresh,
+                        fontSize = 16,
+                        height = 58.dp,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "QUESTION REVIEW",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 1.4.sp
+                    )
+                }
+            }
+
+            itemsIndexed(results) { index, result ->
+                RecapRow(
+                    number = index + 1,
+                    result = result,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
+                )
+            }
+
+            item {
+                Spacer(
+                    modifier = Modifier
+                        .height(24.dp)
+                        .windowInsetsPadding(WindowInsets.navigationBars)
+                )
             }
         }
     }
 }
 
-private data class PerformanceTier(val title: String, val subtitle: String, val stars: Int)
-
 @Composable
-private fun StatCard(
-    label: String,
-    value: String,
-    color: Color,
-    modifier: Modifier = Modifier
+private fun RecapHero(
+    animatedPercentage: Float,
+    correctCount: Int,
+    totalCount: Int,
+    tier: RecapTier,
+    scoreColor: Color,
+    starColor: Color
 ) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f))
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 40.dp, bottom = 8.dp)
+            .padding(horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.size(180.dp)
         ) {
-            Text(
-                text = value,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.ExtraBold,
-                color = color
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium,
-                color = color.copy(alpha = 0.8f)
-            )
+            Canvas(modifier = Modifier.size(180.dp)) {
+                drawArc(
+                    color = scoreColor.copy(alpha = 0.15f),
+                    startAngle = -90f,
+                    sweepAngle = 360f,
+                    useCenter = false,
+                    style = Stroke(width = 14.dp.toPx(), cap = StrokeCap.Round)
+                )
+                drawArc(
+                    color = scoreColor,
+                    startAngle = -90f,
+                    sweepAngle = animatedPercentage * 3.6f,
+                    useCenter = false,
+                    style = Stroke(width = 14.dp.toPx(), cap = StrokeCap.Round)
+                )
+            }
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "${animatedPercentage.toInt()}%",
+                    color = scoreColor,
+                    fontSize = 44.sp,
+                    fontWeight = FontWeight.Black
+                )
+                Text(
+                    text = "$correctCount of $totalCount",
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
+
+        Spacer(Modifier.height(18.dp))
+
+        if (tier.stars > 0) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(bottom = 10.dp)
+            ) {
+                repeat(3) { index ->
+                    val filled = index < tier.stars
+                    val scale by animateFloatAsState(
+                        targetValue = if (filled) 1f else 0.6f,
+                        animationSpec = tween(
+                            durationMillis = 500,
+                            delayMillis = index * 200 + 800,
+                            easing = FastOutSlowInEasing
+                        ),
+                        label = "star$index"
+                    )
+                    Icon(
+                        imageVector = if (filled) Icons.Filled.Star else Icons.Filled.StarBorder,
+                        contentDescription = null,
+                        tint = if (filled) starColor else MaterialTheme.colorScheme.outline,
+                        modifier = Modifier
+                            .size(40.dp)
+                            .scale(scale)
+                    )
+                }
+            }
+        }
+
+        Text(
+            text = tier.title,
+            color = scoreColor,
+            fontSize = 26.sp,
+            fontWeight = FontWeight.Black,
+            textAlign = TextAlign.Center
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = tier.subtitle,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            fontSize = 14.sp,
+            textAlign = TextAlign.Center
+        )
     }
 }
 
 @Composable
-private fun QuestionRecapItem(
-    questionNumber: Int,
+private fun RecapStat(
+    label: String,
+    value: String,
+    accent: Color,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(18.dp))
+            .background(accent.copy(alpha = 0.12f))
+            .padding(vertical = 14.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = value,
+            color = accent,
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Black
+        )
+        Spacer(Modifier.height(2.dp))
+        Text(
+            text = label.uppercase(),
+            color = accent.copy(alpha = 0.85f),
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.sp
+        )
+    }
+}
+
+@Composable
+private fun RecapRow(
+    number: Int,
     result: GameResult,
     modifier: Modifier = Modifier
 ) {
     val multiplyColors = LocalMultiplyColors.current
     val statusColor = if (result.isCorrect) multiplyColors.success else multiplyColors.wrongAnswer
-    val containerColor = if (result.isCorrect)
-        multiplyColors.success.copy(alpha = 0.06f)
-    else
-        multiplyColors.wrongAnswer.copy(alpha = 0.06f)
+    val container = statusColor.copy(alpha = 0.08f)
 
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = containerColor),
-        border = androidx.compose.foundation.BorderStroke(
-            width = 1.dp,
-            color = statusColor.copy(alpha = 0.2f)
-        )
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(container)
+            .border(1.dp, statusColor.copy(alpha = 0.22f), RoundedCornerShape(18.dp))
+            .padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(statusColor.copy(alpha = 0.18f)),
+            contentAlignment = Alignment.Center
         ) {
-            // Status indicator circle
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .background(statusColor.copy(alpha = 0.15f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = if (result.isCorrect) Icons.Filled.Check else Icons.Filled.Close,
-                    contentDescription = if (result.isCorrect) "Correct" else "Wrong",
-                    tint = statusColor,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Q$questionNumber",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                )
-                Text(
-                    text = result.question,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                if (!result.isCorrect) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "Your answer: ${result.userAnswer}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = multiplyColors.wrongAnswer,
-                            textDecoration = TextDecoration.LineThrough
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = "Correct: ${result.correctAnswer}",
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Bold,
-                            color = multiplyColors.success
-                        )
-                    }
+            Icon(
+                imageVector = if (result.isCorrect) Icons.Default.Check else Icons.Default.Close,
+                contentDescription = null,
+                tint = statusColor,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "Q$number",
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
+            )
+            Text(
+                text = result.question,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Black
+            )
+            if (!result.isCorrect) {
+                Spacer(Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "You: ${result.userAnswer}",
+                        color = multiplyColors.wrongAnswer,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        textDecoration = TextDecoration.LineThrough
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        text = "Answer: ${result.correctAnswer}",
+                        color = multiplyColors.success,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black
+                    )
                 }
             }
         }
     }
 }
+
+private data class RecapTier(val title: String, val subtitle: String, val stars: Int)

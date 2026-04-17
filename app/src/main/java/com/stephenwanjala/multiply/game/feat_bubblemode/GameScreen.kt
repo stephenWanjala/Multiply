@@ -2,7 +2,6 @@ package com.stephenwanjala.multiply.game.feat_bubblemode
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.InfiniteTransition
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -18,8 +17,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowColumn
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -31,10 +28,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
@@ -43,8 +41,7 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -58,31 +55,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.pointer.PointerEventType
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFontFamilyResolver
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
@@ -92,7 +81,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -103,8 +91,6 @@ import com.stephenwanjala.multiply.game.components.confettiEffect
 import com.stephenwanjala.multiply.ui.theme.LocalMultiplyColors
 import com.stephenwanjala.multiply.ui.theme.MultiplyTheme
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -162,12 +148,19 @@ private fun GameScreenContent(
 ) {
     Scaffold(topBar = {
         CenterAlignedTopAppBar(title = {
-            Text(
-                text = "${stringResource(R.string.app_name)} ~ ${state.selectedDifficulty.name}",
-                style = MaterialTheme.typography.headlineMedium,
-                textAlign = TextAlign.Center,
-                fontWeight = FontWeight.Bold
-            )
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = stringResource(R.string.app_name),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Black
+                )
+                Text(
+                    text = state.selectedDifficulty.name.lowercase()
+                        .replaceFirstChar { it.titlecase() } + " mode",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
+            }
         },
             navigationIcon = {
                 IconButton(onClick = onNavigateUp) {
@@ -201,9 +194,9 @@ private fun GameScreenContent(
                 .background(
                     brush = Brush.verticalGradient(
                         colors = listOf(
-                            LocalMultiplyColors.current.bubbleBackground,
+                            LocalMultiplyColors.current.bubbleBackground.copy(alpha = 0.35f),
                             MaterialTheme.colorScheme.background,
-                            LocalMultiplyColors.current.bubbleBackground.copy(alpha = 0.7f)
+                            LocalMultiplyColors.current.bubbleBackground.copy(alpha = 0.25f)
                         )
                     )
                 )
@@ -214,20 +207,25 @@ private fun GameScreenContent(
             ) {
 
                 if (!state.gameActive && !state.showGameOverDialog) {
-                    AnimatedStartButton(onStart = { onEvent(BubbleGameEvent.StartGame) })
+                    ReadyPrompt(
+                        difficulty = state.selectedDifficulty.name,
+                        highScore = state.highScore,
+                        onStart = { onEvent(BubbleGameEvent.StartGame) }
+                    )
                 } else if (state.gameActive) {
                     Column(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        AnimatedGameHeader(state = state)
+                        HudBar(state = state)
+                        Spacer(Modifier.height(8.dp))
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .weight(1f)
-                                .padding(bottom = 80.dp)
+                                .padding(bottom = 8.dp)
                                 .onSizeChanged { layoutSize ->
                                     onEvent(BubbleGameEvent.UpdateGameAreaHeight(layoutSize.height.toFloat()))
                                 },
@@ -235,25 +233,17 @@ private fun GameScreenContent(
                         ) {
                             FloatingSymbols()
                             if ((state.currentProblem?.position ?: 0f) <= state.safeAreaHeight) {
-                                MathBubble(state = state)
+                                MathBubble(
+                                    state = state,
+                                    modifier = Modifier.align(Alignment.TopCenter)
+                                )
                             }
-                            androidx.compose.animation.AnimatedVisibility(visible = state.isPaused) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
-                                        .clickable { onEvent(BubbleGameEvent.ResumeGame) },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    FloatingIslandPauseMenu(
-                                        onResume = { onEvent(BubbleGameEvent.ResumeGame) },
-                                        onRestart = { onEvent(BubbleGameEvent.RestartGame) },
-                                        onQuit = ontoHome
-                                    )
-                                    ZzzAnimation()
-                                    ParallaxClouds()
-                                }
-                            }
+                            PauseOverlay(
+                                visible = state.isPaused,
+                                onResume = { onEvent(BubbleGameEvent.ResumeGame) },
+                                onRestart = { onEvent(BubbleGameEvent.RestartGame) },
+                                onQuit = ontoHome
+                            )
                         }
 
                         AnswerButtons(state = state, submitAnswer = {
@@ -283,14 +273,15 @@ private fun GameScreenContent(
 
 @Composable
 fun PulsatingPauseIcon(isPaused: Boolean) {
-    val infiniteTransition = rememberInfiniteTransition()
+    val infiniteTransition = rememberInfiniteTransition(label = "pause")
     val alpha by infiniteTransition.animateFloat(
         initialValue = 0.7f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
             animation = tween(1000, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
-        )
+        ),
+        label = "pauseAlpha"
     )
 
     Icon(
@@ -308,87 +299,131 @@ fun GameOverDialog(
     toSettings: () -> Unit,
     ontoHome: () -> Unit
 ) {
-    Dialog(
-        onDismissRequest = { /* Dialog cannot be dismissed */ }
-    ) {
+    val star = LocalMultiplyColors.current.star
+    val isNewHighScore =
+        state.score >= state.highScore && state.score != 0 && state.highScore != 0
+    Dialog(onDismissRequest = { /* Dialog cannot be dismissed */ }) {
         Box(
             modifier = Modifier
                 .wrapContentSize()
-                .clip(RoundedCornerShape(16.dp))
-                .background(
-                    brush = Brush.linearGradient(
-                        colors = listOf(MaterialTheme.colorScheme.background, LocalMultiplyColors.current.bubbleBackground),
-                    )
-                )
-                .padding(16.dp)
+                .clip(RoundedCornerShape(28.dp))
+                .background(MaterialTheme.colorScheme.surface)
                 .then(if (state.score > 0) Modifier.confettiEffect() else Modifier)
         ) {
             Column(
                 modifier = Modifier
-                    .wrapContentSize()
-                    .padding(16.dp),
+                    .padding(horizontal = 24.dp, vertical = 22.dp)
+                    .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                Text(
-                    text = "Game Over!",
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    textAlign = TextAlign.Center
-                )
-
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                Box(
+                    modifier = Modifier
+                        .size(96.dp)
+                        .clip(CircleShape)
+                        .background(star.copy(alpha = 0.18f)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    AnimatedScoreText(score = state.score)
-                    if (state.score >= state.highScore && state.score != 0 && state.highScore != 0) {
-                        NewHighScoreText()
-                    }
-                    Text(
-                        text = "Game Level :${state.selectedDifficulty.name}",
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Text(
-                        text = "Previous Best: ${state.highScore}",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.White
-                    )
                     Image(
                         painter = painterResource(id = R.drawable.happy_mascot),
                         contentDescription = "Happy Mascot",
-                        modifier = Modifier.size(100.dp)
+                        modifier = Modifier.size(86.dp)
                     )
                 }
+
+                Text(
+                    text = if (state.score == 0) "Oh no!" else "Great job!",
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Black,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center
+                )
+
+                AnimatedScoreText(score = state.score)
+
+                if (isNewHighScore) NewHighScoreText()
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    PulsatingButton(
-                        onClick = toSettings,
-                        text = "Settings",
+                    InfoPill(
+                        label = "LEVEL",
+                        value = state.selectedDifficulty.name.lowercase()
+                            .replaceFirstChar { it.titlecase() }
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    PulsatingButton(
-                        onClick = ontoHome,
-                        text = "Quit",
+                    InfoPill(
+                        label = "BEST",
+                        value = state.highScore.toString()
                     )
                 }
 
-                PulsatingButton(
+                Spacer(Modifier.height(4.dp))
+
+                DuoButton(
+                    text = "Play Again",
                     onClick = startGame,
-                    text = "Play Again!",
-                    icon = Icons.Default.Refresh,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp)
+                    containerColor = LocalMultiplyColors.current.success,
+                    contentColor = Color.White,
+                    leading = Icons.Default.Refresh,
+                    fontSize = 18,
+                    height = 60.dp,
+                    modifier = Modifier.fillMaxWidth()
                 )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    DuoButton(
+                        text = "Settings",
+                        onClick = toSettings,
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        leading = Icons.Default.Settings,
+                        fontSize = 14,
+                        height = 50.dp,
+                        modifier = Modifier.weight(1f)
+                    )
+                    DuoButton(
+                        text = "Home",
+                        onClick = ontoHome,
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                        leading = Icons.Default.Home,
+                        fontSize = 14,
+                        height = 50.dp,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun InfoPill(label: String, value: String) {
+    Column(
+        modifier = Modifier
+            .clip(RoundedCornerShape(14.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(horizontal = 18.dp, vertical = 10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = label,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.sp
+        )
+        Text(
+            text = value,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Black
+        )
     }
 }
 
@@ -396,11 +431,9 @@ fun GameOverDialog(
 @Composable
 fun AnimatedScoreText(score: Int) {
     var displayScore by remember { mutableIntStateOf(0) }
-    val key by remember { mutableIntStateOf(0) }
-
-    LaunchedEffect(key) {
+    LaunchedEffect(score) {
         displayScore = 0
-        delay(500)
+        delay(300)
         while (displayScore < score) {
             displayScore++
             delay(50)
@@ -408,9 +441,9 @@ fun AnimatedScoreText(score: Int) {
     }
 
     Text(
-        text = "Final Score: $displayScore",
-        style = MaterialTheme.typography.headlineMedium,
-        fontWeight = FontWeight.Bold,
+        text = "$displayScore pts",
+        style = MaterialTheme.typography.displaySmall,
+        fontWeight = FontWeight.Black,
         color = LocalMultiplyColors.current.star,
         textAlign = TextAlign.Center
     )
@@ -418,212 +451,257 @@ fun AnimatedScoreText(score: Int) {
 
 @Composable
 fun NewHighScoreText() {
-    val infiniteTransition = rememberInfiniteTransition()
+    val infiniteTransition = rememberInfiniteTransition(label = "hi")
     val scale by infiniteTransition.animateFloat(
         initialValue = 1f,
-        targetValue = 1.2f,
+        targetValue = 1.12f,
         animationSpec = infiniteRepeatable(
             animation = tween(500, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
-        )
+        ),
+        label = "hiScale"
     )
 
-    Text(
-        text = "New High Score!",
-        color = LocalMultiplyColors.current.warning,
-        fontWeight = FontWeight.Bold,
-        style = MaterialTheme.typography.titleLarge,
-        modifier = Modifier.scale(scale)
-    )
-}
-
-@Composable
-fun PulsatingButton(
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
-    icon: ImageVector? = null,
-    text: String
-) {
-    val infiniteTransition = rememberInfiniteTransition()
-    val scale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        )
-    )
-
-    Button(
-        onClick = onClick,
-        modifier = modifier
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            },
-        shape = MaterialTheme.shapes.medium,
-        colors = ButtonDefaults.buttonColors(containerColor = LocalMultiplyColors.current.success)
+    Row(
+        modifier = Modifier
+            .scale(scale)
+            .clip(RoundedCornerShape(50))
+            .background(LocalMultiplyColors.current.warning)
+            .padding(horizontal = 14.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier.wrapContentWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            if (icon != null) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = text,
-                )
-            }
-            Text(
-                text = text,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
-        }
+        Icon(
+            imageVector = Icons.Default.Star,
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier.size(16.dp)
+        )
+        Spacer(Modifier.width(6.dp))
+        Text(
+            text = "NEW HIGH SCORE!",
+            color = Color.White,
+            fontWeight = FontWeight.Black,
+            fontSize = 12.sp,
+            letterSpacing = 1.sp
+        )
     }
 }
 
-
 @Composable
-fun AnimatedGameHeader(state: GameState) {
+fun HudBar(state: GameState) {
+    val star = LocalMultiplyColors.current.star
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        ScoreDisplay(score = state.score, title = "Score")
-        LivesDisplay(lives = state.lives)
-        ScoreDisplay(score = state.highScore, title = "High Score")
-    }
-}
-
-@Composable
-fun ScoreDisplay(score: Int, title: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.labelMedium,
+        StatChip(
+            label = "Score",
+            value = state.score.toString(),
+            icon = Icons.Default.Star,
+            containerColor = star.copy(alpha = 0.18f),
+            contentColor = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f)
         )
-        Text(
-            text = score.toString(),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
+        LivesDisplay(lives = state.lives)
+        StatChip(
+            label = "Best",
+            value = state.highScore.toString(),
+            icon = Icons.Default.EmojiEvents,
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+            modifier = Modifier.weight(1f)
         )
     }
 }
 
 @Composable
 fun LivesDisplay(lives: Int) {
-    Row {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(MaterialTheme.colorScheme.errorContainer)
+            .padding(horizontal = 10.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
         repeat(3) { index ->
             val isActive = index < lives
+            val scale by animateFloatAsHeart(isActive)
             Icon(
                 imageVector = if (isActive) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                 contentDescription = "Life",
-                tint = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(
-                    alpha = 0.3f
-                ),
+                tint = if (isActive) MaterialTheme.colorScheme.error
+                else MaterialTheme.colorScheme.error.copy(alpha = 0.35f),
                 modifier = Modifier
-                    .size(32.dp)
-                    .scale(if (isActive) 1.2f else 1f)
-                    .padding(horizontal = 2.dp)
+                    .size(22.dp)
+                    .scale(scale)
             )
         }
     }
 }
 
+@Composable
+private fun animateFloatAsHeart(isActive: Boolean): androidx.compose.runtime.State<Float> {
+    val infiniteTransition = rememberInfiniteTransition(label = "heart")
+    return infiniteTransition.animateFloat(
+        initialValue = if (isActive) 1f else 0.85f,
+        targetValue = if (isActive) 1.15f else 0.85f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "heartScale"
+    )
+}
+
 
 @Composable
 private fun AnswerButtons(state: GameState, submitAnswer: (choice: Int) -> Unit) {
+    val palette = answerPalette()
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
+            .padding(horizontal = 4.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        state.currentProblem?.choices?.chunked(2)?.forEach { rowChoices ->
+        state.currentProblem?.choices?.chunked(2)?.forEachIndexed { rowIndex, rowChoices ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                rowChoices.forEach { choice ->
-                    Button(
+                rowChoices.forEachIndexed { colIndex, choice ->
+                    val paletteIndex = (rowIndex * 2 + colIndex) % palette.size
+                    val (container, content) = palette[paletteIndex]
+                    DuoButton(
+                        text = choice.toString(),
                         onClick = { submitAnswer(choice) },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(56.dp),
+                        containerColor = container,
+                        contentColor = content,
                         enabled = !state.isPaused,
-                        shape = MaterialTheme.shapes.medium
-                    ) {
-                        Text(
-                            text = choice.toString(),
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                        fontSize = 26,
+                        height = 72.dp,
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }
 
+@Composable
+private fun answerPalette(): List<Pair<Color, Color>> {
+    val scheme = MaterialTheme.colorScheme
+    return listOf(
+        scheme.primaryContainer to scheme.onPrimaryContainer,
+        scheme.secondaryContainer to scheme.onSecondaryContainer,
+        scheme.tertiaryContainer to scheme.onTertiaryContainer,
+        LocalMultiplyColors.current.successContainer to LocalMultiplyColors.current.onSuccessContainer
+    )
+}
+
 
 @Composable
-fun AnimatedStartButton(onStart: () -> Unit) {
-    val infiniteTransition = rememberInfiniteTransition()
-    val scale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        )
-    )
-
-    Button(
-        onClick = onStart,
+private fun ReadyPrompt(difficulty: String, highScore: Int, onStart: () -> Unit) {
+    val primary = MaterialTheme.colorScheme.primary
+    val secondary = MaterialTheme.colorScheme.tertiary
+    Column(
         modifier = Modifier
-            .scale(scale)
-            .padding(16.dp),
-        shape = MaterialTheme.shapes.medium
+            .fillMaxWidth()
+            .padding(28.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
+        Box(
+            modifier = Modifier
+                .size(160.dp)
+                .clip(CircleShape)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(primary.copy(alpha = 0.4f), Color.Transparent)
+                    )
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.math_mascot),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(130.dp)
+                    .clip(CircleShape)
+                    .background(secondary.copy(alpha = 0.2f))
+                    .padding(6.dp)
+            )
+        }
         Text(
-            "Start Game",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.White
+            text = "Ready to play?",
+            style = MaterialTheme.typography.headlineLarge,
+            fontWeight = FontWeight.Black,
+            color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center
+        )
+        Text(
+            text = "Tap the right answer before the bubble lands. You've got 3 hearts — make them count!",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
+            textAlign = TextAlign.Center
+        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            InfoPill(label = "LEVEL", value = difficulty.lowercase().replaceFirstChar { it.titlecase() })
+            InfoPill(label = "BEST", value = highScore.toString())
+        }
+        Spacer(Modifier.height(4.dp))
+        DuoButton(
+            text = "START",
+            onClick = onStart,
+            containerColor = LocalMultiplyColors.current.success,
+            contentColor = Color.White,
+            leading = Icons.Default.PlayArrow,
+            fontSize = 22,
+            height = 68.dp,
+            modifier = Modifier.fillMaxWidth()
         )
     }
 }
 
 
 @Composable
-fun MathBubble(state: GameState) {
+fun MathBubble(state: GameState, modifier: Modifier = Modifier) {
     state.currentProblem?.let { problem ->
-        val transition = rememberInfiniteTransition(label = "gradientTransition")
+        val transition = rememberInfiniteTransition(label = "bubble")
         val totalTime = 1f / state.gameSpeed
 
         val elapsed = (System.currentTimeMillis() - problem.startTime) / 1000f
         val progress = (1f - (elapsed / totalTime)).coerceIn(0f, 1f)
 
-        val pulseAlpha by transition.animateFloat(
-            initialValue = 0.3f,
-            targetValue = 1f,
+        val pulse by transition.animateFloat(
+            initialValue = 0.95f,
+            targetValue = 1.05f,
             animationSpec = infiniteRepeatable(
-                animation = tween(500, easing = LinearEasing),
+                animation = tween(800, easing = FastOutSlowInEasing),
                 repeatMode = RepeatMode.Reverse
             ),
-            label = "pulseAlpha"
+            label = "bubblePulse"
         )
 
+        val bubbleTop = MaterialTheme.colorScheme.primary
+        val bubbleBottom = MaterialTheme.colorScheme.tertiary
+        val ringColor = when {
+            progress > 0.6f -> LocalMultiplyColors.current.success
+            progress > 0.3f -> LocalMultiplyColors.current.warning
+            else -> MaterialTheme.colorScheme.error
+        }
+        val glow = ringColor.copy(alpha = 0.35f)
+
         Box(
-            modifier = Modifier
-                .size(210.dp)
-                .offset { IntOffset(0, problem.position.toInt()) },
+            modifier = modifier
+                .size(220.dp)
+                .offset { IntOffset(0, problem.position.toInt()) }
+                .graphicsLayer { scaleX = pulse; scaleY = pulse },
             contentAlignment = Alignment.Center
         ) {
             val fontResolver = LocalFontFamilyResolver.current
@@ -634,40 +712,77 @@ fun MathBubble(state: GameState) {
                 defaultFontFamilyResolver = fontResolver,
                 defaultLayoutDirection = layoutDirection
             )
-            val pulseColor = MaterialTheme.colorScheme.error.copy(alpha = pulseAlpha)
-            val circleColor = MaterialTheme.colorScheme.primaryContainer
+            val equationText = "${problem.num1} × ${problem.num2}"
             val equationTextStyle = MaterialTheme.typography.displayMedium.copy(
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                fontWeight = FontWeight.Bold
+                color = Color.White,
+                fontWeight = FontWeight.Black
             )
             val textLayoutResult = textMeasurer.measure(
-                text = AnnotatedString("${problem.num1} X ${problem.num2}"),
-                style = MaterialTheme.typography.displayMedium,
+                text = AnnotatedString(equationText),
+                style = equationTextStyle,
             )
             Canvas(modifier = Modifier.fillMaxSize()) {
-                val circleRadius = size.width / 2
-                val circleCenter = Offset(circleRadius, circleRadius)
+                val radius = size.width / 2
+                val center = Offset(radius, radius)
 
+                // Outer glow
                 drawCircle(
-                    color = circleColor,
-                    center = circleCenter,
-                    radius = circleRadius
+                    brush = Brush.radialGradient(
+                        colors = listOf(glow, Color.Transparent),
+                        center = center,
+                        radius = radius * 1.2f
+                    ),
+                    radius = radius * 1.05f,
+                    center = center
                 )
 
+                // Bubble body — vertical gradient for depth
                 drawCircle(
-                    color = pulseColor,
-                    center = circleCenter,
-                    radius = circleRadius * progress,
-                    style = Stroke(width = 4.dp.toPx())
+                    brush = Brush.verticalGradient(
+                        colors = listOf(bubbleTop, bubbleBottom),
+                        startY = 0f,
+                        endY = size.height
+                    ),
+                    center = center,
+                    radius = radius * 0.92f
+                )
+
+                // Highlight spot to make it feel spherical
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(Color.White.copy(alpha = 0.55f), Color.Transparent),
+                        center = Offset(center.x - radius * 0.35f, center.y - radius * 0.35f),
+                        radius = radius * 0.55f
+                    ),
+                    center = Offset(center.x - radius * 0.35f, center.y - radius * 0.35f),
+                    radius = radius * 0.45f
+                )
+
+                // Timer ring — progress goes from full to empty
+                val ringStroke = 8.dp.toPx()
+                drawCircle(
+                    color = ringColor.copy(alpha = 0.25f),
+                    center = center,
+                    radius = radius * 0.95f,
+                    style = Stroke(width = ringStroke)
+                )
+                drawArc(
+                    color = ringColor,
+                    startAngle = -90f,
+                    sweepAngle = 360f * progress,
+                    useCenter = false,
+                    topLeft = Offset(center.x - radius * 0.95f, center.y - radius * 0.95f),
+                    size = androidx.compose.ui.geometry.Size(radius * 0.95f * 2, radius * 0.95f * 2),
+                    style = Stroke(width = ringStroke, cap = androidx.compose.ui.graphics.StrokeCap.Round)
                 )
 
                 drawText(
                     textMeasurer = textMeasurer,
-                    text = "${problem.num1} × ${problem.num2}",
+                    text = equationText,
                     style = equationTextStyle,
                     topLeft = Offset(
-                        circleCenter.x - textLayoutResult.size.width / 2,
-                        circleCenter.y - textLayoutResult.size.height / 2
+                        center.x - textLayoutResult.size.width / 2,
+                        center.y - textLayoutResult.size.height / 2
                     )
                 )
             }
@@ -675,249 +790,128 @@ fun MathBubble(state: GameState) {
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun FloatingIslandPauseMenu(
+private fun PauseOverlay(
+    visible: Boolean,
     onResume: () -> Unit,
     onRestart: () -> Unit,
     onQuit: () -> Unit
 ) {
-    val infiniteTransition = rememberInfiniteTransition()
-    val floatOffset by infiniteTransition.animateFloat(
-        initialValue = -10f,
-        targetValue = 10f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        )
-    )
-    val imageBitmap = ImageBitmap.imageResource(R.drawable.sleeping_mascot)
-    val  color = LocalMultiplyColors.current.success
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(),
+        exit = fadeOut()
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.55f))
+                .clickable(onClick = onResume),
+            contentAlignment = Alignment.Center
+        ) {
+            PauseMenu(
+                onResume = onResume,
+                onRestart = onRestart,
+                onQuit = onQuit
+            )
+        }
+    }
+}
 
+@Composable
+private fun PauseMenu(
+    onResume: () -> Unit,
+    onRestart: () -> Unit,
+    onQuit: () -> Unit
+) {
     Column(
         modifier = Modifier
-            .fillMaxSize()
-            .graphicsLayer {
-                rotationZ = floatOffset * 0.2f
-                translationY = floatOffset
-            }
-            .drawBehind {
-                drawPath(
-                    path = Path().apply {
-                        moveTo(0f, size.height)
-                        quadraticTo(size.width / 2, size.height - 150f, size.width, size.height)
-                    },
-                    color =color
-                )
-
-                drawImage(
-                    image = imageBitmap,
-                    dstSize = IntSize(150, 150),
-                    dstOffset = IntOffset(size.width.toInt() / 2 - 75, 50)
-                )
-            },
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(32.dp)
+            .clip(RoundedCornerShape(28.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        Spacer(Modifier.weight(1f))
-        FlowColumn(
+        Box(
             modifier = Modifier
-                .wrapContentSize(),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .size(80.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center
         ) {
-            HoverButton(
-                text = "Keep Playing",
-                icon = Icons.Default.PlayArrow,
-                onClick = onResume
-            )
-
-            HoverButton(
-                text = "Start Fresh",
-                icon = Icons.Default.Refresh,
-                onClick = onRestart
-            )
-
-            HoverButton(
-                text = "Quit to Home",
-                icon = Icons.Default.Home,
-                onClick = onQuit
+            Image(
+                painter = painterResource(R.drawable.sleeping_mascot),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(70.dp)
+                    .clip(CircleShape)
             )
         }
-        Spacer(Modifier.weight(1f))
-    }
-}
-
-@Composable
-private fun ZzzAnimation() {
-    val symbols = listOf("Z", "z", "Z", "z")
-    val infiniteTransition = rememberInfiniteTransition()
-
-    repeat(8) { index ->
-        val xOffset by infiniteTransition.animateFloat(
-            initialValue = -50f,
-            targetValue = 50f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(3000 + index * 500, easing = LinearEasing),
-                repeatMode = RepeatMode.Reverse
-            )
-        )
-
-        val yOffset by infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = -100f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(2500 + index * 500, easing = FastOutSlowInEasing),
-                repeatMode = RepeatMode.Reverse
-            )
-        )
-
-        val alpha by infiniteTransition.animateFloat(
-            initialValue = 0.8f,
-            targetValue = 0f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(3000, easing = LinearEasing),
-                repeatMode = RepeatMode.Restart
-            )
-        )
-
         Text(
-            text = symbols[index % symbols.size],
-            modifier = Modifier
-                .graphicsLayer {
-                    translationX = xOffset
-                    translationY = yOffset
-                    this.alpha = this.translationX
-                },
-            fontSize = 24.sp,
-            color = Color.White.copy(alpha = alpha)
+            text = "Paused",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Black,
+            color = MaterialTheme.colorScheme.onSurface
         )
-    }
-}
-
-@Composable
-private fun ParallaxClouds() {
-    val infiniteTransition = rememberInfiniteTransition()
-
-    CloudLayer(
-        speedMultiplier = 0.5f,
-        scale = 0.8f,
-        alpha = 0.4f,
-        infiniteTransition = infiniteTransition
-    )
-
-    CloudLayer(
-        speedMultiplier = 1.2f,
-        scale = 1f,
-        alpha = 0.7f,
-        infiniteTransition = infiniteTransition
-    )
-}
-
-@Composable
-private fun CloudLayer(
-    speedMultiplier: Float,
-    scale: Float,
-    alpha: Float,
-    infiniteTransition: InfiniteTransition
-) {
-    repeat(5) { index ->
-        val xOffset by infiniteTransition.animateFloat(
-            initialValue = -200f,
-            targetValue = 200f,
-            animationSpec = infiniteRepeatable(
-                animation = tween((3000 / speedMultiplier).toInt(), easing = LinearEasing),
-                repeatMode = RepeatMode.Reverse
+        Text(
+            text = "Take a breath — your progress is safe.",
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            textAlign = TextAlign.Center
+        )
+        Spacer(Modifier.height(4.dp))
+        DuoButton(
+            text = "Keep Playing",
+            onClick = onResume,
+            containerColor = LocalMultiplyColors.current.success,
+            contentColor = Color.White,
+            leading = Icons.Default.PlayArrow,
+            fontSize = 16,
+            height = 54.dp,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            DuoButton(
+                text = "Restart",
+                onClick = onRestart,
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                leading = Icons.Default.Refresh,
+                fontSize = 13,
+                height = 48.dp,
+                modifier = Modifier.weight(1f)
             )
-        )
-
-        Image(
-            painter = painterResource(R.drawable.ic_cloud),
-            contentDescription = null,
-            modifier = Modifier
-                .scale(scale)
-                .graphicsLayer {
-                    this.alpha = alpha
-                    translationX = xOffset * (index + 1)
-                }
-                .offset(y = (index * 50).dp)
-        )
-    }
-}
-
-@Composable
-fun HoverButton(
-    text: String,
-    icon: ImageVector,
-    onClick: () -> Unit
-) {
-    var isHovered by remember { mutableStateOf(false) }
-    val infiniteTransition = rememberInfiniteTransition()
-    val scale by infiniteTransition.animateFloat(
-        initialValue = 0.98f,
-        targetValue = 1.02f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        )
-    )
-
-    Button(
-        onClick = onClick,
-        modifier = Modifier
-            .graphicsLayer {
-                scaleX = if (isHovered) 1.1f else scale
-                scaleY = if (isHovered) 1.1f else scale
-            }
-            .pointerInput(Unit) {
-                awaitPointerEventScope {
-                    while (true) {
-                        val event = awaitPointerEvent()
-
-                        when (event.type) {
-                            PointerEventType.Enter -> {
-                                isHovered = true
-                            }
-
-                            PointerEventType.Exit -> {
-                                isHovered = false
-                            }
-                        }
-                    }
-                }
-            },
-        colors = ButtonDefaults.buttonColors(
-            containerColor = LocalMultiplyColors.current.star,
-            contentColor = MaterialTheme.colorScheme.onSurface
-        ),
-        elevation = ButtonDefaults.buttonElevation(
-            defaultElevation = 4.dp,
-            pressedElevation = 8.dp
-        )
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = icon,
-                contentDescription = text,
-                modifier = Modifier.size(24.dp)
+            DuoButton(
+                text = "Quit",
+                onClick = onQuit,
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                leading = Icons.Default.Home,
+                fontSize = 13,
+                height = 48.dp,
+                modifier = Modifier.weight(1f)
             )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(text = text, fontWeight = FontWeight.Bold)
         }
     }
 }
+
 
 @PreviewScreenSizes
 @Composable
 private fun GameOverDialogPreview() {
     MultiplyTheme {
-        GameOverDialog(state = GameState(), toSettings = {}, ontoHome = {}, startGame = {})
+        GameOverDialog(state = GameState(score = 24, highScore = 18), toSettings = {}, ontoHome = {}, startGame = {})
     }
 }
 
 
 @PreviewScreenSizes
 @Composable
-private fun PreviewFloatingIslandPauseMenu() {
+private fun PreviewPauseMenu() {
     MultiplyTheme {
-        FloatingIslandPauseMenu(onQuit = {}, onResume = {}, onRestart = {})
+        PauseMenu(onQuit = {}, onResume = {}, onRestart = {})
     }
 }

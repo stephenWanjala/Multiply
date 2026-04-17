@@ -2,6 +2,7 @@ package com.stephenwanjala.multiply.game.feat_bubblemode
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,10 +21,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -34,19 +37,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
-import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -56,10 +53,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.stephenwanjala.multiply.R
 import com.stephenwanjala.multiply.core.designsystem.component.AnimatedFloatingSymbolsBackground
+import com.stephenwanjala.multiply.ui.theme.LocalMultiplyColors
 import com.stephenwanjala.multiply.ui.theme.MultiplyTheme
-import kotlinx.coroutines.delay
-
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InstructionsScreen(onStartGame: () -> Unit, navigateUp: () -> Unit) {
@@ -74,8 +69,8 @@ fun InstructionsScreen(onStartGame: () -> Unit, navigateUp: () -> Unit) {
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = "Game Instructions",
-                        style = MaterialTheme.typography.headlineMedium,
+                        text = "How to Play",
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Black,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
@@ -102,62 +97,66 @@ fun InstructionsScreen(onStartGame: () -> Unit, navigateUp: () -> Unit) {
             color = MaterialTheme.colorScheme.background
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-                AnimatedFloatingSymbolsBackground()
+                AnimatedFloatingSymbolsBackground(alpha = 0.3f)
 
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .verticalScroll(scrollState)
-                        .padding(horizontal = 16.dp, vertical = 24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .padding(horizontal = 20.dp, vertical = 20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(18.dp)
                 ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.math_mascot),
-                        contentDescription = "Math Mascot",
-                        modifier = Modifier
-                            .size(180.dp)
-                            .padding(bottom = 16.dp)
-                            .clip(CircleShape)
-                            .background(
-                                MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
-                            )
-                            .padding(8.dp)
+                    IntroHero()
+
+                    StepCard(
+                        step = 1,
+                        icon = Icons.Default.TouchApp,
+                        iconTint = MaterialTheme.colorScheme.primary,
+                        title = "Pop the bubble",
+                        body = "A multiplication problem floats down. Read it fast!",
+                        accent = MaterialTheme.colorScheme.primary
+                    )
+                    StepCard(
+                        step = 2,
+                        icon = Icons.Default.Bolt,
+                        iconTint = LocalMultiplyColors.current.warning,
+                        title = "Tap the right answer",
+                        body = "Pick from four choices before the bubble reaches the bottom.",
+                        accent = LocalMultiplyColors.current.warning
+                    )
+                    StepCard(
+                        step = 3,
+                        icon = Icons.Default.Favorite,
+                        iconTint = MaterialTheme.colorScheme.error,
+                        title = "Protect your hearts",
+                        body = "You have 3 hearts. Wrong or missed answers cost you one.",
+                        accent = MaterialTheme.colorScheme.error
+                    )
+                    StepCard(
+                        step = 4,
+                        icon = Icons.Default.EmojiEvents,
+                        iconTint = LocalMultiplyColors.current.star,
+                        title = "Chase the high score",
+                        body = "Keep your streak alive and beat your personal best!",
+                        accent = LocalMultiplyColors.current.star
                     )
 
-                    Text(
-                        text = "Math Adventure!",
-                        style = MaterialTheme.typography.displaySmall,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(bottom = 24.dp),
-                        textAlign = TextAlign.Center
-                    )
+                    TipsRow()
 
-                    InstructionCard(
-                        title = "How to Play",
-                        items = listOf(
-                            "Solve multiplication problems swiftly.",
-                            "Answer correctly before time runs out.",
-                            "Earn shiny points for every right answer.",
-                            "Watch out! Mistakes cost you lives.",
-                            "Challenge yourself and beat your high score!"
-                        ),
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
+                    Spacer(Modifier.height(6.dp))
 
-                    InstructionCard(
-                        title = "Cool Features",
-                        items = listOf(
-                            "Engaging math challenges for all ages.",
-                            "Vibrant, eye-catching graphics.",
-                            "Exciting sound effects to keep you going.",
-                            "Track your progress and see yourself grow.",
-                            "Compete with friends for top scores!"
-                        ),
-                        modifier = Modifier.padding(bottom = 32.dp)
+                    DuoButton(
+                        text = "Let's Play!",
+                        onClick = onStartGame,
+                        containerColor = LocalMultiplyColors.current.success,
+                        contentColor = Color.White,
+                        leading = Icons.Default.PlayArrow,
+                        fontSize = 20,
+                        height = 64.dp,
+                        modifier = Modifier.fillMaxWidth(0.9f)
                     )
-
-                    StartGameButton(onStartGame = onStartGame)
+                    Spacer(Modifier.height(12.dp))
                 }
             }
         }
@@ -165,99 +164,152 @@ fun InstructionsScreen(onStartGame: () -> Unit, navigateUp: () -> Unit) {
 }
 
 @Composable
-private fun StartGameButton(onStartGame: () -> Unit) {
-    var startButtonScale by remember { mutableFloatStateOf(1f) }
-
-    LaunchedEffect(Unit) {
-        while (true) {
-            startButtonScale = 1.08f
-            delay(400)
-            startButtonScale = 1f
-            delay(400)
-        }
-    }
-
-    Button(
-        onClick = onStartGame,
+private fun IntroHero() {
+    val primary = MaterialTheme.colorScheme.primary
+    val tertiary = MaterialTheme.colorScheme.tertiary
+    Box(
         modifier = Modifier
-            .fillMaxWidth(0.8f)
-            .height(56.dp)
-            .graphicsLayer {
-                scaleX = startButtonScale
-                scaleY = startButtonScale
-            }
-            .shadow(
-                elevation = 8.dp,
-                shape = RoundedCornerShape(percent = 50),
-                spotColor = MaterialTheme.colorScheme.primary
-            ),
-        shape = RoundedCornerShape(percent = 50),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary
-        ),
-        elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp, pressedElevation = 2.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(28.dp))
+            .background(
+                Brush.linearGradient(
+                    colors = listOf(
+                        primary.copy(alpha = 0.9f),
+                        tertiary.copy(alpha = 0.85f)
+                    )
+                )
+            )
+            .padding(20.dp)
     ) {
-        Text(
-            text = "Start Your Adventure!",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.ExtraBold,
-            style = MaterialTheme.typography.titleLarge
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(100.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.22f))
+                    .padding(6.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.math_mascot),
+                    contentDescription = "Math Mascot",
+                    modifier = Modifier
+                        .size(88.dp)
+                        .clip(CircleShape)
+                )
+            }
+            Spacer(Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Quick rundown",
+                    color = Color.White.copy(alpha = 0.85f),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+                Text(
+                    text = "Math\nAdventure!",
+                    color = Color.White,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Black,
+                    lineHeight = 30.sp
+                )
+            }
+        }
     }
 }
 
-
 @Composable
-fun InstructionCard(title: String, items: List<String>, modifier: Modifier = Modifier) {
-    Card(
-        modifier = modifier
+private fun StepCard(
+    step: Int,
+    icon: ImageVector,
+    iconTint: Color,
+    title: String,
+    body: String,
+    accent: Color
+) {
+    Row(
+        modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp)
-            .shadow(
-                elevation = 6.dp,
-                shape = RoundedCornerShape(16.dp),
-                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
-            ),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp)
-        )
+            .clip(RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
+        Box(
+            modifier = Modifier
+                .size(56.dp)
+                .clip(RoundedCornerShape(18.dp))
+                .background(accent.copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = iconTint,
+                modifier = Modifier.size(28.dp)
+            )
+        }
+        Spacer(Modifier.width(14.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "STEP $step",
+                    color = accent,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 1.2.sp
+                )
+            }
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.secondary,
-                modifier = Modifier.padding(bottom = 12.dp)
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Black
             )
-            items.forEach { item ->
-                Row(
-                    modifier = Modifier.padding(vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(10.dp)
-                            .background(
-                                brush = Brush.radialGradient(
-                                    colors = listOf(
-                                        MaterialTheme.colorScheme.primary,
-                                        MaterialTheme.colorScheme.tertiary,
-                                    )
-                                ),
-                                shape = CircleShape
-                            )
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(
-                        text = item,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = body,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
+                fontSize = 13.sp,
+                lineHeight = 18.sp
+            )
+        }
+    }
+}
+
+@Composable
+private fun TipsRow() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        CircleIconBadge(
+            icon = Icons.Default.Shield,
+            backgroundColor = LocalMultiplyColors.current.success,
+            contentColor = Color.White
+        )
+        Spacer(Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "Pro tip",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
+            )
+            Text(
+                text = "Watch the timer ring — it turns red when time is running out!",
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Start,
+                lineHeight = 18.sp
+            )
         }
     }
 }

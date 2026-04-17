@@ -1,22 +1,23 @@
 [versions]
-agp = "8.13.2"
-kotlin = "2.3.0"
-kotlinxSerializationVersion="3.4.0"
-coreKtx = "1.17.0"
+agp = "9.1.1"
+kotlin = "2.3.20"
+kotlinxSerializationVersion="3.4.2"
+coreKtx = "1.18.0"
 junit = "4.13.2"
 coreSplashscreen = "1.2.0"
 junitVersion = "1.3.0"
 espressoCore = "3.7.0"
 lifecycleRuntimeKtx = "2.10.0"
 compose-material-icons-extended = "1.7.8"
-ksp="2.3.2"
-activityCompose = "1.12.2"
-composeBom = "2026.01.00"
-koin-bom = "4.2.0-beta4"
-material3="1.5.0-alpha12"
-datastorePreferences = "1.2.0"
-navigationCompose = "2.9.6"
-testng = "7.11.0"
+ksp="2.3.6"
+stabilityAnalyzer="0.7.3"
+activityCompose = "1.13.0"
+composeBom = "2026.03.01"
+koin-bom = "4.2.1"
+material3="1.5.0-alpha17"
+datastorePreferences = "1.2.1"
+navigationCompose = "2.9.7"
+testng = "7.12.0"
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -54,10 +55,9 @@ testng = { group = "org.testng", name = "testng", version.ref = "testng" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
-stability-analyzer = { id = "com.github.skydoves.compose.stability.analyzer", version = "0.6.5" }
+stability-analyzer = { id = "com.github.skydoves.compose.stability.analyzer", version.ref = "stabilityAnalyzer" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 
 

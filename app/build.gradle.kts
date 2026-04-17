@@ -2,7 +2,6 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.ksp)
@@ -11,12 +10,14 @@ plugins {
 
 android {
     namespace = "com.stephenwanjala.multiply"
-    compileSdk = 36
+    compileSdk {
+        version=release(37)
+    }
 
     defaultConfig {
         applicationId = "com.stephenwanjala.multiply"
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 1
         versionName = "1.0"
 
@@ -39,7 +40,7 @@ android {
     }
     kotlin {
         compilerOptions {
-            jvmTarget = JvmTarget.fromTarget("11")
+            jvmTarget =  JvmTarget.JVM_11
             freeCompilerArgs.add("-Xannotation-default-target=param-property")
         }
     }

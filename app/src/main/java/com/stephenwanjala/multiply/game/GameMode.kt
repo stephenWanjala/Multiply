@@ -13,17 +13,12 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -33,73 +28,65 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.stephenwanjala.multiply.R
 import com.stephenwanjala.multiply.core.designsystem.component.AnimatedFloatingSymbolsBackground
-import com.stephenwanjala.multiply.game.components.glowingOrbs
-import com.stephenwanjala.multiply.game.components.neumorphicShadow
-import com.stephenwanjala.multiply.game.components.repeatLiquidBackground
+import com.stephenwanjala.multiply.game.feat_bubblemode.CircleIconBadge
+import com.stephenwanjala.multiply.game.feat_bubblemode.DuoButton
 import com.stephenwanjala.multiply.game.models.BubbleMathDifficulty
 import com.stephenwanjala.multiply.game.models.GameMode
 import com.stephenwanjala.multiply.game.models.GameModeSaver
 import com.stephenwanjala.multiply.game.models.ModeDifficulty
 import com.stephenwanjala.multiply.game.models.ModeDifficultySaver
 import com.stephenwanjala.multiply.game.models.QuizDifficulty
+import com.stephenwanjala.multiply.ui.theme.LocalMultiplyColors
 import com.stephenwanjala.multiply.ui.theme.MultiplyTheme
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.launch
 
 @Composable
 fun GameModeSelectionScreen(
     onConfirm: (GameMode, ModeDifficulty) -> Unit,
     lastHighScoreProvider: (GameMode, ModeDifficulty) -> Int = { _, _ -> 0 }
 ) {
-    val coroutineScope = rememberCoroutineScope()
     var selectedMode by rememberSaveable(stateSaver = GameModeSaver) {
         mutableStateOf<GameMode?>(null)
     }
-
     var selectedDifficulty by rememberSaveable(stateSaver = ModeDifficultySaver) {
         mutableStateOf<ModeDifficulty?>(null)
     }
-
     var backProgress by remember { mutableFloatStateOf(0f) }
 
     val modes = listOf(
@@ -107,19 +94,14 @@ fun GameModeSelectionScreen(
         GameMode.QuizGenius(QuizDifficulty.BEGINNER)
     )
 
-
     if (selectedMode != null) {
         PredictiveBackHandler { progress: Flow<BackEventCompat> ->
             try {
-                progress.collect { backEvent ->
-                    backProgress = backEvent.progress
-                }
+                progress.collect { event -> backProgress = event.progress }
                 selectedMode = null
                 selectedDifficulty = null
                 backProgress = 0f
             } catch (e: CancellationException) {
-                // Cancellation: user released the gesture without completing
-                // Animate back to normal state
                 backProgress = 0f
                 throw e
             }
@@ -129,94 +111,49 @@ fun GameModeSelectionScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                        MaterialTheme.colorScheme.background,
-                        MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f),
-                        MaterialTheme.colorScheme.background
-                    )
-                )
-            )
-            .repeatLiquidBackground()
-            .glowingOrbs()
+            .background(MaterialTheme.colorScheme.background)
     ) {
         AnimatedFloatingSymbolsBackground(alpha = 0.3f)
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp)
-                // Apply predictive back animation transforms
+                .verticalScroll(rememberScrollState())
+                .statusBarsPadding()
+                .padding(horizontal = 20.dp, vertical = 16.dp)
                 .graphicsLayer(
                     scaleX = 1f - (backProgress * 0.05f),
                     scaleY = 1f - (backProgress * 0.05f),
                     translationX = backProgress * 100f,
                     alpha = 1f - (backProgress * 0.2f)
                 ),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            // Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(30.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                NeonText(
-                    text = "SELECT YOUR CHALLENGE",
-                    gradient = listOf(MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.primary),
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(vertical = 16.dp),
-                    fontSize = 20.sp
-                )
-                Image(
-                    painter = painterResource(id = R.drawable.math_mascot),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .statusBarsPadding()
-                        .size(60.dp)
-                )
-            }
+            HeroHeader()
 
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Step 1: GameMode selection
             AnimatedVisibility(
                 visible = selectedMode == null,
-                enter = fadeIn(animationSpec = tween(400, delayMillis = 200)) +
-                        scaleIn(
-                            initialScale = 0.8f,
-                            animationSpec = spring(
-                                dampingRatio = Spring.DampingRatioLowBouncy,
-                                stiffness = Spring.StiffnessLow
-                            )
-                        ),
-                exit = fadeOut(animationSpec = tween(300)) +
-                        scaleOut(
-                            targetScale = 0.8f,
-                            animationSpec = spring(
-                                dampingRatio = Spring.DampingRatioNoBouncy,
-                                stiffness = Spring.StiffnessMedium
-                            )
-                        ),
-                label = "GameModeSelection"
+                enter = fadeIn(tween(350)) + scaleIn(
+                    initialScale = 0.9f,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioLowBouncy,
+                        stiffness = Spring.StiffnessMedium
+                    )
+                ),
+                exit = fadeOut(tween(200)) + scaleOut(targetScale = 0.9f, animationSpec = tween(200)),
+                label = "modeStep"
             ) {
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    MaterialSectionTitle(text = "Choose Game Mode")
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    modes.forEach { modeOption ->
-                        Material3GameModeCard(
-                            mode = modeOption,
-                            isSelected = false,
+                    SectionLabel(eyebrow = "Step 1 of 2", title = "Pick your mode")
+                    modes.forEach { mode ->
+                        ModeCard(
+                            mode = mode,
                             onClick = {
-                                selectedMode = modeOption
+                                selectedMode = mode
                                 selectedDifficulty = null
                             }
                         )
@@ -224,496 +161,439 @@ fun GameModeSelectionScreen(
                 }
             }
 
-            // Step 2: Difficulty selection
             AnimatedVisibility(
                 visible = selectedMode != null,
-                enter = fadeIn(animationSpec = tween(400, delayMillis = 150)) +
-                        slideInVertically(
-                            initialOffsetY = { it / 2 },
-                            animationSpec = spring(
-                                dampingRatio = Spring.DampingRatioMediumBouncy,
-                                stiffness = Spring.StiffnessLow
-                            )
-                        ) +
+                enter = fadeIn(tween(350, delayMillis = 100)) +
                         expandVertically(
                             animationSpec = spring(
                                 dampingRatio = Spring.DampingRatioMediumBouncy,
-                                stiffness = Spring.StiffnessLow
+                                stiffness = Spring.StiffnessMediumLow
                             )
                         ),
-                exit = fadeOut(animationSpec = tween(250)) +
-                        slideOutVertically(
-                            targetOffsetY = { it / 3 },
-                            animationSpec = spring(
-                                dampingRatio = Spring.DampingRatioNoBouncy,
-                                stiffness = Spring.StiffnessMedium
-                            )
-                        ) +
-                        shrinkVertically(
-                            animationSpec = spring(
-                                dampingRatio = Spring.DampingRatioNoBouncy,
-                                stiffness = Spring.StiffnessMedium
-                            )
-                        ),
-                label = "DifficultySelection"
+                exit = fadeOut(tween(200)) + shrinkVertically(animationSpec = tween(200)),
+                label = "difficultyStep"
             ) {
                 selectedMode?.let { targetMode ->
                     Column(
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        MaterialSectionTitle(text = "Choose Difficulty for ${targetMode.name}")
-
-                        val availableDifficulties = when (targetMode) {
-                            is GameMode.BubbleMathBlitz -> BubbleMathDifficulty.entries
-                            is GameMode.QuizGenius -> QuizDifficulty.entries
-                        }
-
-                        Material3LevelSelectionGrid(
-                            levels = availableDifficulties,
-                            selectedLevel = selectedDifficulty,
-                            onLevelSelected = { level ->
-                                selectedDifficulty = when (targetMode) {
-                                    is GameMode.BubbleMathBlitz -> ModeDifficulty.Bubble(level as BubbleMathDifficulty)
-                                    is GameMode.QuizGenius -> ModeDifficulty.Quiz(level as QuizDifficulty)
-                                }
+                        BackChip(
+                            label = "Change mode",
+                            onClick = {
+                                selectedMode = null
+                                selectedDifficulty = null
                             }
                         )
+                        SectionLabel(
+                            eyebrow = "Step 2 of 2",
+                            title = "Choose difficulty"
+                        )
 
-                        AnimatedVisibility(
-                            visible = selectedDifficulty != null,
-                            enter = fadeIn(animationSpec = tween(300, delayMillis = 200)) +
-                                    expandVertically(animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)),
-                            exit = fadeOut(animationSpec = tween(200)) +
-                                    shrinkVertically(animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy))
-                        ) {
-                            selectedDifficulty?.let { diff ->
-                                val highScore = lastHighScoreProvider(targetMode, diff)
-                                if (highScore > 0) {
-                                    Column {
-                                        Spacer(modifier = Modifier.height(16.dp))
-                                        Surface(
-                                            shape = RoundedCornerShape(16.dp),
-                                            color = MaterialTheme.colorScheme.primaryContainer.copy(
-                                                alpha = 0.3f
-                                            ),
-                                            modifier = Modifier.padding(horizontal = 16.dp)
-                                        ) {
-                                            Row(
-                                                modifier = Modifier.padding(12.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Star,
-                                                    contentDescription = null,
-                                                    tint = Color(0xFFFFD700),
-                                                    modifier = Modifier.size(20.dp)
-                                                )
-                                                Text(
-                                                    text = "Best Score: $highScore",
-                                                    color = MaterialTheme.colorScheme.onSurface,
-                                                    fontWeight = FontWeight.Bold,
-                                                    style = MaterialTheme.typography.bodyMedium
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
+                        DifficultyList(
+                            mode = targetMode,
+                            selected = selectedDifficulty,
+                            onSelect = { selectedDifficulty = it }
+                        )
+
+                        selectedDifficulty?.let { diff ->
+                            val highScore = lastHighScoreProvider(targetMode, diff)
+                            if (highScore > 0) {
+                                HighScoreBadge(score = highScore)
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(Modifier.height(6.dp))
 
-                        AnimatedVisibility(
-                            visible = true,
-                            enter = fadeIn(animationSpec = tween(300, delayMillis = 300)) +
-                                    slideInVertically(
-                                        initialOffsetY = { it / 4 },
-                                        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
-                                    )
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Material3GradientButton(
-                                    text = "Start ${targetMode.name}",
-                                    enabled = selectedDifficulty != null,
-                                    gradient = listOf(
-                                        MaterialTheme.colorScheme.primary,
-                                        MaterialTheme.colorScheme.secondary
-                                    ),
-                                    onClick = {
-                                        coroutineScope.launch {
-                                            if (selectedDifficulty != null) {
-                                                onConfirm(targetMode, selectedDifficulty!!)
-                                            }
-                                        }
-                                    }
-                                )
-                            }
-                        }
+                        DuoButton(
+                            text = "Start ${targetMode.name}",
+                            onClick = {
+                                selectedDifficulty?.let { onConfirm(targetMode, it) }
+                            },
+                            enabled = selectedDifficulty != null,
+                            containerColor = LocalMultiplyColors.current.success,
+                            contentColor = Color.White,
+                            leading = Icons.Default.PlayArrow,
+                            fontSize = 18,
+                            height = 62.dp,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
                 }
+            }
+
+            Spacer(Modifier.height(12.dp))
+        }
+    }
+}
+
+@Composable
+private fun HeroHeader() {
+    val primary = MaterialTheme.colorScheme.primary
+    val tertiary = MaterialTheme.colorScheme.tertiary
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(28.dp))
+            .background(
+                Brush.linearGradient(
+                    colors = listOf(
+                        primary.copy(alpha = 0.9f),
+                        tertiary.copy(alpha = 0.85f)
+                    )
+                )
+            )
+            .padding(20.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(82.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.22f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.math_mascot),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(72.dp)
+                        .clip(CircleShape)
+                )
+            }
+            Spacer(Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "LET'S PLAY",
+                    color = Color.White.copy(alpha = 0.85f),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.4.sp
+                )
+                Text(
+                    text = "Choose your\nchallenge!",
+                    color = Color.White,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Black,
+                    lineHeight = 28.sp
+                )
             }
         }
     }
 }
 
 @Composable
-fun Material3GameModeCard(
+private fun SectionLabel(eyebrow: String, title: String) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = eyebrow.uppercase(),
+            color = MaterialTheme.colorScheme.primary,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Black,
+            letterSpacing = 1.4.sp
+        )
+        Text(
+            text = title,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Black
+        )
+    }
+}
+
+@Composable
+private fun BackChip(label: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.AutoMirrored.Default.ArrowBack,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.size(16.dp)
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = label,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+private fun ModeCard(
     mode: GameMode,
+    onClick: () -> Unit
+) {
+    val haptics = LocalHapticFeedback.current
+    val spec = mode.cardSpec()
+    val scale by animateFloatAsState(
+        targetValue = 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "modeCardScale"
+    )
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .scale(scale)
+            .clip(RoundedCornerShape(24.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .clickable {
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                onClick()
+            }
+            .padding(18.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(72.dp)
+                .clip(RoundedCornerShape(22.dp))
+                .background(spec.accent.copy(alpha = 0.18f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                painter = painterResource(id = spec.mascotRes),
+                contentDescription = mode.name,
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(CircleShape)
+            )
+        }
+        Spacer(Modifier.width(14.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = spec.eyebrow.uppercase(),
+                color = spec.accent,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 1.3.sp
+            )
+            Text(
+                text = mode.name,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 19.sp,
+                fontWeight = FontWeight.Black
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = spec.description,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                fontSize = 13.sp,
+                lineHeight = 17.sp
+            )
+        }
+        Spacer(Modifier.width(10.dp))
+        CircleIconBadge(
+            icon = Icons.Default.PlayArrow,
+            backgroundColor = spec.accent,
+            contentColor = Color.White,
+            size = 40.dp,
+            iconSize = 22.dp
+        )
+    }
+}
+
+@Composable
+private fun DifficultyList(
+    mode: GameMode,
+    selected: ModeDifficulty?,
+    onSelect: (ModeDifficulty) -> Unit
+) {
+    val options = difficultyOptionsFor(mode)
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        options.forEach { option ->
+            val isSelected = selected == option.value
+            DifficultyTile(option = option, isSelected = isSelected, onClick = { onSelect(option.value) })
+        }
+    }
+}
+
+@Composable
+private fun DifficultyTile(
+    option: DifficultyOption,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
     val haptics = LocalHapticFeedback.current
     val scale by animateFloatAsState(
-        targetValue = if (isSelected) 1.05f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "cardScale"
-    )
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth(0.9f)
-            .height(120.dp)
-            .scale(scale)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-            ) {
-                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                onClick()
-            },
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected)
-                MaterialTheme.colorScheme.primaryContainer
-            else
-                MaterialTheme.colorScheme.surfaceVariant
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isSelected) 12.dp else 4.dp
-        )
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .then(
-                    if (isSelected) {
-                        Modifier.background(
-                            brush = Brush.linearGradient(
-                                colors = listOf(
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                                    MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f)
-                                )
-                            )
-                        )
-                    } else Modifier
-                )
-                .padding(16.dp),
-            contentAlignment = Alignment.CenterStart
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = if (isSelected)
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-                    else
-                        MaterialTheme.colorScheme.surface,
-                    modifier = Modifier.size(70.dp)
-                ) {
-                    Image(
-                        painter = painterResource(
-                            id = when (mode) {
-                                is GameMode.BubbleMathBlitz -> R.drawable.bubblemuscot
-                                is GameMode.QuizGenius -> R.drawable.math_mascot
-                            }
-                        ),
-                        contentDescription = mode.name,
-                        modifier = Modifier.padding(8.dp)
-                    )
-                }
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = mode.name,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (isSelected)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.titleLarge
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = when (mode) {
-                            is GameMode.BubbleMathBlitz -> "Fast-paced arithmetic challenges!"
-                            is GameMode.QuizGenius -> "Strategic quiz with diverse difficulties!"
-                        },
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 12.sp,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-
-                if (isSelected) {
-                    Surface(
-                        shape = RoundedCornerShape(50),
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.CheckCircle,
-                            contentDescription = "Selected",
-                            tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.padding(4.dp)
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-fun Material3LevelSelectionGrid(
-    levels: List<Any>,
-    selectedLevel: Any?,
-    onLevelSelected: (Any) -> Unit
-) {
-    val haptics = LocalHapticFeedback.current
-
-    val difficultyColors = listOf(
-        MaterialTheme.colorScheme.primary,
-        MaterialTheme.colorScheme.secondary,
-        MaterialTheme.colorScheme.tertiary,
-        MaterialTheme.colorScheme.error
-    )
-
-    FlowRow(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        levels.forEachIndexed { index, level ->
-            val isSelected = selectedLevel?.let { selected ->
-                when (selected) {
-                    is ModeDifficulty.Bubble -> selected.difficulty == level
-                    is ModeDifficulty.Quiz -> selected.difficulty == level
-                    else -> false
-                }
-            } ?: false
-
-            val levelColor = difficultyColors.getOrElse(index) { MaterialTheme.colorScheme.primary }
-            val scale by animateFloatAsState(
-                targetValue = if (isSelected) 1.1f else 1f,
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessMedium
-                ),
-                label = "levelScale"
-            )
-
-            Surface(
-                modifier = Modifier
-                    .width(130.dp)
-                    .height(70.dp)
-                    .neumorphicShadow(
-                        offset = 4.dp,
-                        blurRadius = 12.dp,
-                        shape = RoundedCornerShape(20.dp),
-                        lightColor = MaterialTheme.colorScheme.primary,
-                        darkColor = MaterialTheme.colorScheme.secondary,
-                        inverted = isSelected
-                    )
-                    .graphicsLayer(scaleX = scale, scaleY = scale)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) {
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onLevelSelected(level)
-                    },
-                shape = RoundedCornerShape(20.dp),
-                color = if (isSelected) levelColor else MaterialTheme.colorScheme.surfaceVariant,
-                tonalElevation = if (isSelected) 8.dp else 2.dp,
-                shadowElevation = if (isSelected) 12.dp else 4.dp
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .then(
-                            if (isSelected) {
-                                Modifier.background(
-                                    brush = Brush.radialGradient(
-                                        colors = listOf(
-                                            levelColor.copy(alpha = 0.8f),
-                                            levelColor
-                                        )
-                                    )
-                                )
-                            } else {
-                                Modifier.background(MaterialTheme.colorScheme.surfaceVariant)
-                            }
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = when (level) {
-                                is BubbleMathDifficulty -> level.name
-                                is QuizDifficulty -> level.name
-                                else -> "Unknown"
-                            },
-                            color = if (isSelected)
-                                MaterialTheme.colorScheme.onPrimary
-                            else
-                                MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Bold,
-                            fontSize = 14.sp,
-                            letterSpacing = 0.5.sp,
-                            textAlign = TextAlign.Center,
-                            style = MaterialTheme.typography.labelLarge
-                        )
-
-                        if (isSelected) {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Icon(
-                                imageVector = Icons.Filled.CheckCircle,
-                                contentDescription = "Selected",
-                                tint = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun NeonText(
-    text: String,
-    gradient: List<Color>,
-    modifier: Modifier = Modifier,
-    fontSize: TextUnit = 24.sp
-) {
-    val brush = remember { Brush.linearGradient(colors = gradient) }
-
-    Text(
-        text = text,
-        fontSize = fontSize,
-        fontWeight = FontWeight.ExtraBold,
-        textAlign = TextAlign.Center,
-        modifier = modifier,
-        style = MaterialTheme.typography.headlineMedium.copy(
-            brush = brush,
-            shadow = Shadow(
-                color = gradient.first().copy(alpha = 0.5f),
-                offset = Offset(2f, 2f),
-                blurRadius = 12f
-            )
-        )
-    )
-}
-
-@Composable
-fun Material3GradientButton(
-    modifier: Modifier = Modifier,
-    text: String,
-    gradient: List<Color>,
-    enabled: Boolean = true,
-    onClick: () -> Unit
-) {
-    val haptics = LocalHapticFeedback.current
-    val scale by animateFloatAsState(
-        targetValue = if (enabled) 1f else 0.95f,
+        targetValue = if (isSelected) 1.02f else 1f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-        label = "buttonScale"
+        label = "diffTileScale"
     )
+    val face = if (isSelected) option.accent else MaterialTheme.colorScheme.surface
+    val titleColor = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
+    val subColor =
+        if (isSelected) Color.White.copy(alpha = 0.85f)
+        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
 
-    Surface(
-        onClick = {
-            if (enabled) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .scale(scale)
+            .clip(RoundedCornerShape(20.dp))
+            .background(face)
+            .clickable {
                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                 onClick()
             }
-        },
-        modifier = modifier
-            .scale(scale)
-            .clip(RoundedCornerShape(16.dp)),
-        enabled = enabled,
-        shape = RoundedCornerShape(16.dp),
-        color = Color.Transparent,
-        shadowElevation = if (enabled) 8.dp else 0.dp
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
                 .background(
-                    brush = if (enabled)
-                        Brush.linearGradient(gradient)
-                    else
-                        Brush.linearGradient(
-                            listOf(
-                                MaterialTheme.colorScheme.surfaceVariant,
-                                MaterialTheme.colorScheme.surfaceVariant
-                            )
-                        )
-                )
-                .padding(horizontal = 32.dp, vertical = 16.dp),
+                    if (isSelected) Color.White.copy(alpha = 0.22f)
+                    else option.accent.copy(alpha = 0.18f)
+                ),
             contentAlignment = Alignment.Center
         ) {
+            Text(text = option.emoji, fontSize = 26.sp)
+        }
+        Spacer(Modifier.width(14.dp))
+        Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = text,
-                color = if (enabled)
-                    MaterialTheme.colorScheme.onPrimary
-                else
-                    MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.5.sp,
-                style = MaterialTheme.typography.labelLarge
+                text = option.title,
+                color = titleColor,
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Black
+            )
+            Text(
+                text = option.subtitle,
+                color = subColor,
+                fontSize = 12.sp,
+                lineHeight = 16.sp
             )
         }
     }
 }
 
 @Composable
-fun MaterialSectionTitle(text: String) {
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-        modifier = Modifier.fillMaxWidth()
+private fun HighScoreBadge(score: Int) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = text,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(16.dp),
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.titleMedium
+        CircleIconBadge(
+            icon = Icons.Default.EmojiEvents,
+            backgroundColor = LocalMultiplyColors.current.star,
+            contentColor = Color.White,
+            size = 36.dp,
+            iconSize = 20.dp
         )
+        Spacer(Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "YOUR BEST",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
+            )
+            Text(
+                text = "$score points",
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Black
+            )
+        }
+    }
+}
+
+private data class ModeCardSpec(
+    val eyebrow: String,
+    val description: String,
+    val accent: Color,
+    val mascotRes: Int
+)
+
+@Composable
+private fun GameMode.cardSpec(): ModeCardSpec = when (this) {
+    is GameMode.BubbleMathBlitz -> ModeCardSpec(
+        eyebrow = "Action",
+        description = "Pop falling bubbles before they hit the floor. Fast and fun!",
+        accent = MaterialTheme.colorScheme.primary,
+        mascotRes = R.drawable.bubblemuscot
+    )
+    is GameMode.QuizGenius -> ModeCardSpec(
+        eyebrow = "Focus",
+        description = "Answer a set of questions at your own pace. Build your streak!",
+        accent = MaterialTheme.colorScheme.tertiary,
+        mascotRes = R.drawable.math_mascot
+    )
+}
+
+private data class DifficultyOption(
+    val value: ModeDifficulty,
+    val emoji: String,
+    val title: String,
+    val subtitle: String,
+    val accent: Color
+)
+
+@Composable
+private fun difficultyOptionsFor(mode: GameMode): List<DifficultyOption> {
+    val success = LocalMultiplyColors.current.success
+    val warning = LocalMultiplyColors.current.warning
+    val error = MaterialTheme.colorScheme.error
+    val tertiary = MaterialTheme.colorScheme.tertiary
+    return when (mode) {
+        is GameMode.BubbleMathBlitz -> listOf(
+            DifficultyOption(
+                value = ModeDifficulty.Bubble(BubbleMathDifficulty.EASY),
+                emoji = "🌱",
+                title = "Easy",
+                subtitle = "Slow pace • Small numbers",
+                accent = success
+            ),
+            DifficultyOption(
+                value = ModeDifficulty.Bubble(BubbleMathDifficulty.MEDIUM),
+                emoji = "🔥",
+                title = "Medium",
+                subtitle = "Quick thinking • Mid numbers",
+                accent = warning
+            ),
+            DifficultyOption(
+                value = ModeDifficulty.Bubble(BubbleMathDifficulty.HARD),
+                emoji = "⚡",
+                title = "Hard",
+                subtitle = "Lightning fast • Big numbers",
+                accent = error
+            )
+        )
+        is GameMode.QuizGenius -> QuizDifficulty.entries.map { level ->
+            val (emoji, accent) = when (level) {
+                QuizDifficulty.BEGINNER -> "🌱" to success
+                QuizDifficulty.INTERMEDIATE -> "🔥" to warning
+                QuizDifficulty.ADVANCED -> "⚡" to tertiary
+                QuizDifficulty.EXPERT -> "💀" to error
+            }
+            val range = level.numberRange
+            DifficultyOption(
+                value = ModeDifficulty.Quiz(level),
+                emoji = emoji,
+                title = level.name.lowercase().replaceFirstChar { it.titlecase() },
+                subtitle = "${level.questionCount} questions • ${range.first}-${range.last}",
+                accent = accent
+            )
+        }
     }
 }
 
@@ -723,6 +603,7 @@ private val GameMode.name: String
         is GameMode.QuizGenius -> "Quiz Genius"
     }
 
+@PreviewLightDark
 @PreviewScreenSizes
 @Composable
 private fun PreviewGameModes() {
