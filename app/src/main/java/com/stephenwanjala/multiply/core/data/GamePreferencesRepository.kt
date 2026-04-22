@@ -2,6 +2,7 @@ package com.stephenwanjala.multiply.core.data
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import com.stephenwanjala.multiply.game.models.BubbleMathDifficulty
@@ -28,6 +29,10 @@ class GamePreferencesRepository(
             ?: QuizDifficulty.BEGINNER
     }
 
+    val quizTimedMode: Flow<Boolean> = dataStore.data.map { preferences ->
+        preferences[QUIZ_TIMED_MODE_KEY] ?: true
+    }
+
     suspend fun saveBubbleDifficulty(difficulty: BubbleMathDifficulty) {
         dataStore.edit { prefs ->
             prefs[BUBBLE_DIFFICULTY_KEY] = difficulty.ordinal
@@ -46,9 +51,16 @@ class GamePreferencesRepository(
         }
     }
 
+    suspend fun saveQuizTimedMode(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[QUIZ_TIMED_MODE_KEY] = enabled
+        }
+    }
+
     companion object {
         private val BUBBLE_DIFFICULTY_KEY = intPreferencesKey("difficulty")
         private val BUBBLE_HIGH_SCORE_KEY = intPreferencesKey("high_score")
         private val QUIZ_DIFFICULTY_KEY = intPreferencesKey("QuizDifficulty")
+        private val QUIZ_TIMED_MODE_KEY = booleanPreferencesKey("QuizTimedMode")
     }
 }
