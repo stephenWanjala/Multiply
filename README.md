@@ -84,9 +84,9 @@ To build from the command line:
 
 ## Screenshots
 
-| Game Mode Selection                       | Welcome Screen                      | Game Instructions                           | GamePlay                       | GameOver                             | Game Settings                  |
-|-------------------------------------------|-------------------------------------|---------------------------------------------|--------------------------------|--------------------------------------|--------------------------------|
-| ![Game Mode Selection](docs/gamemode.gif) | ![Welcome Screen](docs/welcome.gif) | ![Game Instructions](docs/instructions.gif) | ![GamePlay](docs/gameplay.gif) | ![GameOver](docs/samplegameover.gif) | ![Settings](docs/settings.png) |
+| Pick Your Mode                       | Choose Difficulty                              | Quiz Genius (Timed)               | App Settings                          |
+|--------------------------------------|------------------------------------------------|-----------------------------------|---------------------------------------|
+| ![Pick Your Mode](docs/gamemode.png) | ![Choose Difficulty](docs/game_mode_level.png) | ![Quiz Genius](docs/quiz_mode.png) | ![App Settings](docs/appsettings.png) |
 
 ## Acknowledgments
 
