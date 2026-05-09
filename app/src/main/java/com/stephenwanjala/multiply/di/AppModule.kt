@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
+import com.stephenwanjala.multiply.core.data.AppPreferencesViewModel
 import com.stephenwanjala.multiply.core.data.GamePreferencesRepository
 import com.stephenwanjala.multiply.game.feat_bubblemode.GameViewModel
 import com.stephenwanjala.multiply.game.feat_quizmode.QuestionsViewModel
@@ -24,4 +25,5 @@ val appModule = module {
     singleOf(::GamePreferencesRepository)
     viewModelOf(::QuestionsViewModel)
     viewModelOf(::GameViewModel)
+    viewModelOf(::AppPreferencesViewModel)
 }

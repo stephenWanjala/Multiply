@@ -6,6 +6,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.stephenwanjala.multiply.core.data.AppPreferencesViewModel
 import com.stephenwanjala.multiply.game.models.BubbleMathDifficulty
 import com.stephenwanjala.multiply.game.models.GameMode
 import com.stephenwanjala.multiply.game.GameModeSelectionScreen
@@ -31,6 +32,8 @@ fun MultiplyNav(
     val viewModel = koinViewModel<GameViewModel>()
     val state = viewModel.state.collectAsStateWithLifecycle().value
     val questionsVm = koinViewModel<QuestionsViewModel>()
+    val appPrefsVm = koinViewModel<AppPreferencesViewModel>()
+    val appTheme = appPrefsVm.appTheme.collectAsStateWithLifecycle().value
     NavHost(
         navController = navHostController,
         startDestination = MultiplyDestination.SelectGameMode,
@@ -80,7 +83,9 @@ fun MultiplyNav(
             SettingsScreen(
                 onBackClick = navHostController::navigateUp,
                 state = state,
-                onEvent = viewModel::onEvent
+                onEvent = viewModel::onEvent,
+                appTheme = appTheme,
+                onSelectTheme = appPrefsVm::setAppTheme
             )
         }
         composable<MultiplyDestination.GameInstructionDestination> {

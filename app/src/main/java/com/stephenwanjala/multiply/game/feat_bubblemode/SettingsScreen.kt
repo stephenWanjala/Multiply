@@ -3,11 +3,15 @@ package com.stephenwanjala.multiply.game.feat_bubblemode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -40,6 +44,8 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -53,6 +59,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
@@ -61,6 +68,7 @@ import androidx.compose.ui.unit.sp
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.stephenwanjala.multiply.core.designsystem.component.AnimatedFloatingSymbolsBackground
 import com.stephenwanjala.multiply.game.models.BubbleMathDifficulty
+import com.stephenwanjala.multiply.ui.theme.AppTheme
 import com.stephenwanjala.multiply.ui.theme.LocalMultiplyColors
 import com.stephenwanjala.multiply.ui.theme.MultiplyTheme
 
@@ -69,11 +77,12 @@ import com.stephenwanjala.multiply.ui.theme.MultiplyTheme
 fun SettingsScreen(
     onBackClick: () -> Unit,
     state: GameState,
-    onEvent: (BubbleGameEvent) -> Unit
+    onEvent: (BubbleGameEvent) -> Unit,
+    appTheme: AppTheme = AppTheme.SPACE,
+    onSelectTheme: (AppTheme) -> Unit = {}
 ) {
     var soundEnabled by remember { mutableStateOf(true) }
     var musicEnabled by remember { mutableStateOf(true) }
-    var selectedTheme by remember { mutableStateOf("Space") }
 
     val scrollState = rememberScrollState()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
@@ -163,7 +172,7 @@ fun SettingsScreen(
                             title = "Theme",
                             subtitle = "Choose your vibe"
                         ) {
-                            ThemePicker(selected = selectedTheme, onSelect = { selectedTheme = it })
+                            ThemePicker(selected = appTheme, onSelect = onSelectTheme)
                         }
                     } else {
                         Row(
@@ -200,8 +209,8 @@ fun SettingsScreen(
                                     subtitle = "Choose your vibe"
                                 ) {
                                     ThemePicker(
-                                        selected = selectedTheme,
-                                        onSelect = { selectedTheme = it }
+                                        selected = appTheme,
+                                        onSelect = onSelectTheme
                                     )
                                 }
                             }
@@ -412,34 +421,41 @@ private fun AudioToggleRow(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ThemePicker(selected: String, onSelect: (String) -> Unit) {
-    val themes = listOf(
-        ThemeOption("Space", "🚀", MaterialTheme.colorScheme.primary),
-        ThemeOption("Jungle", "🌴", LocalMultiplyColors.current.success),
-        ThemeOption("Ocean", "🌊", MaterialTheme.colorScheme.secondary),
-        ThemeOption("Candy", "🍭", MaterialTheme.colorScheme.tertiary)
-    )
-    Row(
+private fun ThemePicker(selected: AppTheme, onSelect: (AppTheme) -> Unit) {
+    val isDark = isSystemInDarkTheme()
+    val context = LocalContext.current
+    val themes = AppTheme.availableEntries()
+    FlowRow(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         themes.forEach { theme ->
+            val accent = remember(theme, isDark, context) {
+                if (theme.isDynamic && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    if (isDark) dynamicDarkColorScheme(context).primary
+                    else dynamicLightColorScheme(context).primary
+                } else {
+                    theme.colorScheme(isDark).primary
+                }
+            }
             ThemeTile(
-                option = theme,
-                isSelected = selected == theme.name,
-                onClick = { onSelect(theme.name) },
-                modifier = Modifier.weight(1f)
+                theme = theme,
+                accent = accent,
+                isSelected = selected == theme,
+                onClick = { onSelect(theme) },
+                modifier = Modifier.width(76.dp)
             )
         }
     }
 }
 
-private data class ThemeOption(val name: String, val emoji: String, val color: Color)
-
 @Composable
 private fun ThemeTile(
-    option: ThemeOption,
+    theme: AppTheme,
+    accent: Color,
     isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -454,7 +470,7 @@ private fun ThemeTile(
             .scale(scale)
             .clip(RoundedCornerShape(16.dp))
             .background(
-                if (isSelected) option.color else option.color.copy(alpha = 0.18f)
+                if (isSelected) accent else accent.copy(alpha = 0.18f)
             )
             .clickable(onClick = onClick)
             .padding(vertical = 12.dp, horizontal = 4.dp),
@@ -466,18 +482,20 @@ private fun ThemeTile(
                 .clip(CircleShape)
                 .background(
                     if (isSelected) Color.White.copy(alpha = 0.22f)
-                    else option.color.copy(alpha = 0.25f)
+                    else accent.copy(alpha = 0.25f)
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Text(text = option.emoji, fontSize = 22.sp)
+            Text(text = theme.emoji, fontSize = 22.sp)
         }
         Spacer(Modifier.height(6.dp))
         Text(
-            text = option.name,
+            text = theme.displayName,
             color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface,
             fontSize = 12.sp,
-            fontWeight = FontWeight.Black
+            fontWeight = FontWeight.Black,
+            maxLines = 1,
+            softWrap = false
         )
     }
 }
@@ -499,6 +517,6 @@ fun Int.toBubbleDifficulty() = when (this) {
 @Composable
 private fun SettingsPreview() {
     MultiplyTheme {
-        SettingsScreen(onBackClick = {}, state = GameState()) { }
+        SettingsScreen(onBackClick = {}, state = GameState(), onEvent = {})
     }
 }

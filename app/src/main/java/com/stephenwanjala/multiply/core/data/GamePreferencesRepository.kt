@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import com.stephenwanjala.multiply.game.models.BubbleMathDifficulty
 import com.stephenwanjala.multiply.game.models.QuizDifficulty
+import com.stephenwanjala.multiply.ui.theme.AppTheme
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -33,6 +34,12 @@ class GamePreferencesRepository(
         preferences[QUIZ_TIMED_MODE_KEY] ?: true
     }
 
+    val appTheme: Flow<AppTheme> = dataStore.data.map { preferences ->
+        preferences[APP_THEME_KEY]
+            ?.let { AppTheme.fromOrdinal(it) }
+            ?: AppTheme.SPACE
+    }
+
     suspend fun saveBubbleDifficulty(difficulty: BubbleMathDifficulty) {
         dataStore.edit { prefs ->
             prefs[BUBBLE_DIFFICULTY_KEY] = difficulty.ordinal
@@ -57,10 +64,17 @@ class GamePreferencesRepository(
         }
     }
 
+    suspend fun saveAppTheme(theme: AppTheme) {
+        dataStore.edit { prefs ->
+            prefs[APP_THEME_KEY] = theme.ordinal
+        }
+    }
+
     companion object {
         private val BUBBLE_DIFFICULTY_KEY = intPreferencesKey("difficulty")
         private val BUBBLE_HIGH_SCORE_KEY = intPreferencesKey("high_score")
         private val QUIZ_DIFFICULTY_KEY = intPreferencesKey("QuizDifficulty")
         private val QUIZ_TIMED_MODE_KEY = booleanPreferencesKey("QuizTimedMode")
+        private val APP_THEME_KEY = intPreferencesKey("AppTheme")
     }
 }
