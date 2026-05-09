@@ -3,15 +3,11 @@ package com.stephenwanjala.multiply.game.feat_bubblemode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -19,19 +15,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.VolumeUp
-import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -39,36 +29,24 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.window.core.layout.WindowWidthSizeClass
 import com.stephenwanjala.multiply.core.designsystem.component.AnimatedFloatingSymbolsBackground
 import com.stephenwanjala.multiply.game.models.BubbleMathDifficulty
-import com.stephenwanjala.multiply.ui.theme.AppTheme
 import com.stephenwanjala.multiply.ui.theme.LocalMultiplyColors
 import com.stephenwanjala.multiply.ui.theme.MultiplyTheme
 
@@ -77,18 +55,10 @@ import com.stephenwanjala.multiply.ui.theme.MultiplyTheme
 fun SettingsScreen(
     onBackClick: () -> Unit,
     state: GameState,
-    onEvent: (BubbleGameEvent) -> Unit,
-    appTheme: AppTheme = AppTheme.SPACE,
-    onSelectTheme: (AppTheme) -> Unit = {}
+    onEvent: (BubbleGameEvent) -> Unit
 ) {
-    var soundEnabled by remember { mutableStateOf(true) }
-    var musicEnabled by remember { mutableStateOf(true) }
-
     val scrollState = rememberScrollState()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
-    val adaptiveInfo = currentWindowAdaptiveInfo()
-    val isCompact =
-        adaptiveInfo.windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.COMPACT
 
     Scaffold(
         modifier = Modifier
@@ -98,7 +68,7 @@ fun SettingsScreen(
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = "Settings",
+                        text = "Bubble Settings",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Black,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -143,78 +113,6 @@ fun SettingsScreen(
                             selected = state.selectedDifficulty,
                             onSelect = { onEvent(BubbleGameEvent.UpdateDifficulty(it)) }
                         )
-                    }
-
-                    if (isCompact) {
-                        SettingsSection(
-                            title = "Audio",
-                            subtitle = "Mute the bubbles or crank the beats"
-                        ) {
-                            AudioToggleRow(
-                                icon = Icons.AutoMirrored.Filled.VolumeUp,
-                                accent = LocalMultiplyColors.current.success,
-                                title = "Sound Effects",
-                                description = "Pops, dings and celebrations",
-                                enabled = soundEnabled,
-                                onToggle = { soundEnabled = it }
-                            )
-                            Spacer(Modifier.height(10.dp))
-                            AudioToggleRow(
-                                icon = Icons.Default.MusicNote,
-                                accent = MaterialTheme.colorScheme.tertiary,
-                                title = "Background Music",
-                                description = "Chill beats while you play",
-                                enabled = musicEnabled,
-                                onToggle = { musicEnabled = it }
-                            )
-                        }
-                        SettingsSection(
-                            title = "Theme",
-                            subtitle = "Choose your vibe"
-                        ) {
-                            ThemePicker(selected = appTheme, onSelect = onSelectTheme)
-                        }
-                    } else {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            Box(modifier = Modifier.weight(1f)) {
-                                SettingsSection(
-                                    title = "Audio",
-                                    subtitle = "Mute the bubbles or crank the beats"
-                                ) {
-                                    AudioToggleRow(
-                                        icon = Icons.AutoMirrored.Filled.VolumeUp,
-                                        accent = LocalMultiplyColors.current.success,
-                                        title = "Sound Effects",
-                                        description = "Pops and celebrations",
-                                        enabled = soundEnabled,
-                                        onToggle = { soundEnabled = it }
-                                    )
-                                    Spacer(Modifier.height(10.dp))
-                                    AudioToggleRow(
-                                        icon = Icons.Default.MusicNote,
-                                        accent = MaterialTheme.colorScheme.tertiary,
-                                        title = "Background Music",
-                                        description = "Chill beats while you play",
-                                        enabled = musicEnabled,
-                                        onToggle = { musicEnabled = it }
-                                    )
-                                }
-                            }
-                            Box(modifier = Modifier.weight(1f)) {
-                                SettingsSection(
-                                    title = "Theme",
-                                    subtitle = "Choose your vibe"
-                                ) {
-                                    ThemePicker(
-                                        selected = appTheme,
-                                        onSelect = onSelectTheme
-                                    )
-                                }
-                            }
-                        }
                     }
 
                     Spacer(Modifier.height(4.dp))
@@ -359,143 +257,6 @@ private fun DifficultyTile(
             color = textColor.copy(alpha = 0.8f),
             fontSize = 10.sp,
             fontWeight = FontWeight.SemiBold
-        )
-    }
-}
-
-@Composable
-private fun AudioToggleRow(
-    icon: ImageVector,
-    accent: Color,
-    title: String,
-    description: String,
-    enabled: Boolean,
-    onToggle: (Boolean) -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(RoundedCornerShape(14.dp))
-                .background(accent.copy(alpha = 0.18f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = accent,
-                modifier = Modifier.size(22.dp)
-            )
-        }
-        Spacer(Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Black
-            )
-            Text(
-                text = description,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                fontSize = 12.sp
-            )
-        }
-        Switch(
-            checked = enabled,
-            onCheckedChange = onToggle,
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = Color.White,
-                checkedTrackColor = LocalMultiplyColors.current.success,
-                uncheckedThumbColor = Color.White,
-                uncheckedTrackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-            )
-        )
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun ThemePicker(selected: AppTheme, onSelect: (AppTheme) -> Unit) {
-    val isDark = isSystemInDarkTheme()
-    val context = LocalContext.current
-    val themes = AppTheme.availableEntries()
-    FlowRow(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        themes.forEach { theme ->
-            val accent = remember(theme, isDark, context) {
-                if (theme.isDynamic && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    if (isDark) dynamicDarkColorScheme(context).primary
-                    else dynamicLightColorScheme(context).primary
-                } else {
-                    theme.colorScheme(isDark).primary
-                }
-            }
-            ThemeTile(
-                theme = theme,
-                accent = accent,
-                isSelected = selected == theme,
-                onClick = { onSelect(theme) },
-                modifier = Modifier.width(76.dp)
-            )
-        }
-    }
-}
-
-@Composable
-private fun ThemeTile(
-    theme: AppTheme,
-    accent: Color,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val scale by animateFloatAsState(
-        targetValue = if (isSelected) 1.06f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-        label = "themeScale"
-    )
-    Column(
-        modifier = modifier
-            .scale(scale)
-            .clip(RoundedCornerShape(16.dp))
-            .background(
-                if (isSelected) accent else accent.copy(alpha = 0.18f)
-            )
-            .clickable(onClick = onClick)
-            .padding(vertical = 12.dp, horizontal = 4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(
-                    if (isSelected) Color.White.copy(alpha = 0.22f)
-                    else accent.copy(alpha = 0.25f)
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(text = theme.emoji, fontSize = 22.sp)
-        }
-        Spacer(Modifier.height(6.dp))
-        Text(
-            text = theme.displayName,
-            color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Black,
-            maxLines = 1,
-            softWrap = false
         )
     }
 }

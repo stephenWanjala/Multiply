@@ -36,7 +36,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -79,6 +81,7 @@ import kotlinx.coroutines.flow.Flow
 @Composable
 fun GameModeSelectionScreen(
     onConfirm: (GameMode, ModeDifficulty) -> Unit,
+    onOpenSettings: () -> Unit = {},
     lastHighScoreProvider: (GameMode, ModeDifficulty) -> Int = { _, _ -> 0 }
 ) {
     var selectedMode by rememberSaveable(stateSaver = GameModeSaver) {
@@ -130,6 +133,25 @@ fun GameModeSelectionScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                IconButton(
+                    onClick = onOpenSettings,
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "App Settings",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+
             HeroHeader()
 
             AnimatedVisibility(

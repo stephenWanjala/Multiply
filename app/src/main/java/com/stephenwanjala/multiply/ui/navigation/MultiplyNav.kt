@@ -19,6 +19,7 @@ import com.stephenwanjala.multiply.game.feat_bubblemode.GameViewModel
 import com.stephenwanjala.multiply.game.feat_quizmode.QuizEvent
 import com.stephenwanjala.multiply.game.feat_quizmode.QuestionsScreen
 import com.stephenwanjala.multiply.game.feat_quizmode.QuestionsViewModel
+import com.stephenwanjala.multiply.game.feat_settings.AppSettingsScreen
 import com.stephenwanjala.multiply.game.models.ModeDifficulty
 import com.stephenwanjala.multiply.game.models.QuizDifficulty
 import kotlinx.serialization.Serializable
@@ -60,6 +61,9 @@ fun MultiplyNav(
                             navHostController.navigate(MultiplyDestination.QuestionsDestination)
                         }
                     }
+                },
+                onOpenSettings = {
+                    navHostController.navigate(MultiplyDestination.AppSettingsDestination)
                 }
             )
         }
@@ -83,7 +87,12 @@ fun MultiplyNav(
             SettingsScreen(
                 onBackClick = navHostController::navigateUp,
                 state = state,
-                onEvent = viewModel::onEvent,
+                onEvent = viewModel::onEvent
+            )
+        }
+        composable<MultiplyDestination.AppSettingsDestination> {
+            AppSettingsScreen(
+                onBackClick = navHostController::navigateUp,
                 appTheme = appTheme,
                 onSelectTheme = appPrefsVm::setAppTheme
             )
@@ -128,6 +137,9 @@ sealed interface MultiplyDestination {
 
     @Serializable
     data object SettingsDestination : MultiplyDestination
+
+    @Serializable
+    data object AppSettingsDestination : MultiplyDestination
 
     @Serializable
     data object GameInstructionDestination : MultiplyDestination
