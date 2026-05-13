@@ -50,6 +50,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocalFireDepartment
@@ -93,6 +94,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.stephenwanjala.multiply.game.components.confettiEffect
 import com.stephenwanjala.multiply.game.feat_bubblemode.DuoButton
 import com.stephenwanjala.multiply.game.feat_bubblemode.darken
+import com.stephenwanjala.multiply.game.models.QuizDifficulty
 import com.stephenwanjala.multiply.game.models.hasLargeNumbers
 import com.stephenwanjala.multiply.ui.theme.LocalMultiplyColors
 
@@ -132,10 +134,19 @@ fun QuestionsScreen(
     }
 
     if (state.showRecap) {
+        val hasNextLevel = state.level.ordinal < QuizDifficulty.entries.lastIndex
         RecapScreen(
             results = state.results,
             onClosePressed = onClosePressed,
-            onRetry = { viewModel.onEvent(QuizEvent.RetryQuiz) }
+            onPlayAgain = { viewModel.onEvent(QuizEvent.RetryQuiz) },
+            onNextLevel = if (hasNextLevel) {
+                { viewModel.onEvent(QuizEvent.NextLevel) }
+            } else null,
+            nextLevelName = QuizDifficulty.entries
+                .getOrNull(state.level.ordinal + 1)
+                ?.name
+                ?.lowercase()
+                ?.replaceFirstChar { it.titlecase() }
         )
         return
     }
@@ -986,7 +997,9 @@ private fun QuizSettingsSheet(
 private fun RecapScreen(
     results: List<GameResult>,
     onClosePressed: () -> Unit,
-    onRetry: () -> Unit
+    onPlayAgain: () -> Unit,
+    onNextLevel: (() -> Unit)?,
+    nextLevelName: String?
 ) {
     val correctCount = results.count { it.isCorrect }
     val voidedCount = results.count { it.wasVoided }
@@ -1076,32 +1089,49 @@ private fun RecapScreen(
             }
 
             item {
-                Row(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    DuoButton(
-                        text = "Home",
-                        onClick = onClosePressed,
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = MaterialTheme.colorScheme.onSurface,
-                        leading = Icons.AutoMirrored.Default.ArrowBack,
-                        fontSize = 16,
-                        height = 58.dp,
-                        modifier = Modifier.weight(1f)
-                    )
-                    DuoButton(
-                        text = "Try Again",
-                        onClick = onRetry,
-                        containerColor = multiplyColors.success,
-                        contentColor = Color.White,
-                        leading = Icons.Default.Refresh,
-                        fontSize = 16,
-                        height = 58.dp,
-                        modifier = Modifier.weight(1f)
-                    )
+                    if (onNextLevel != null) {
+                        DuoButton(
+                            text = if (nextLevelName != null) "Next Level: $nextLevelName" else "Next Level",
+                            onClick = onNextLevel,
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                            leading = Icons.AutoMirrored.Default.ArrowForward,
+                            fontSize = 16,
+                            height = 58.dp,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        DuoButton(
+                            text = "Home",
+                            onClick = onClosePressed,
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = MaterialTheme.colorScheme.onSurface,
+                            leading = Icons.AutoMirrored.Default.ArrowBack,
+                            fontSize = 16,
+                            height = 58.dp,
+                            modifier = Modifier.weight(1f)
+                        )
+                        DuoButton(
+                            text = "Play Again",
+                            onClick = onPlayAgain,
+                            containerColor = multiplyColors.success,
+                            contentColor = Color.White,
+                            leading = Icons.Default.Refresh,
+                            fontSize = 16,
+                            height = 58.dp,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             }
 

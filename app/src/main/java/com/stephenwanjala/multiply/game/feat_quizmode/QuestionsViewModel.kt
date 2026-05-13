@@ -73,6 +73,8 @@ class QuestionsViewModel(
 
             QuizEvent.RetryQuiz -> setUpQuestions()
 
+            QuizEvent.NextLevel -> advanceToNextLevel()
+
             QuizEvent.DismissRecap -> {
                 viewModelScope.launch { _effects.send(QuizEffect.NavigateHome) }
             }
@@ -219,6 +221,17 @@ class QuestionsViewModel(
         viewModelScope.launch { repository.saveQuizDifficulty(difficulty) }
     }
 
+    private fun advanceToNextLevel() {
+        val current = _state.value.level
+        val levels = QuizDifficulty.entries
+        val nextIndex = current.ordinal + 1
+        if (nextIndex !in levels.indices) {
+            setUpQuestions()
+            return
+        }
+        setDifficulty(levels[nextIndex])
+    }
+
     private fun setTimedMode(enabled: Boolean) {
         viewModelScope.launch { repository.saveQuizTimedMode(enabled) }
     }
@@ -287,6 +300,7 @@ sealed interface QuizEvent {
     data class UpdateLevel(val level: QuizDifficulty) : QuizEvent
     data class SetTimedMode(val enabled: Boolean) : QuizEvent
     data object RetryQuiz : QuizEvent
+    data object NextLevel : QuizEvent
     data object DismissRecap : QuizEvent
     data object PauseTimer : QuizEvent
     data object ResumeTimer : QuizEvent
