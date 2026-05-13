@@ -10,11 +10,30 @@ private val random = Random.Default
 /**
  * Generates a list of math questions for the given quiz difficulty.
  *
+ * Tries to avoid repeats by deduplicating on the question string. If the
+ * parameter space for a generator is too small to fill the requested count,
+ * falls back to allowing repeats so the caller always gets the expected size.
+ *
  * @param difficulty The difficulty level which determines the number and type of questions.
  * @return A list containing difficulty.questionCount MathQuestion items.
  */
 fun generateQuestions(difficulty: QuizDifficulty): List<MathQuestion> {
-    return List(difficulty.questionCount) { generateQuestion(difficulty) }
+    val target = difficulty.questionCount
+    val seen = mutableSetOf<String>()
+    val questions = ArrayList<MathQuestion>(target)
+    var attempts = 0
+    val attemptCap = target * 20
+    while (questions.size < target && attempts < attemptCap) {
+        val q = generateQuestion(difficulty)
+        if (seen.add(q.question)) {
+            questions.add(q)
+        }
+        attempts++
+    }
+    while (questions.size < target) {
+        questions.add(generateQuestion(difficulty))
+    }
+    return questions
 }
 
 /**
@@ -194,8 +213,23 @@ private fun generateComplexExpression(): MathQuestion {
 }
 
 private fun generateExponentialQuestion(): MathQuestion {
-    val base = (2..5).random(random)
-    val exponent = (3..5).random(random)
+    // (base, maxExp) pairs keep answers within a reasonable expert range
+    // while expanding the unique combination space well beyond 12.
+    val basesAndExponentRanges = listOf(
+        2 to (3..7),  // up to 128
+        3 to (3..5),  // up to 243
+        4 to (3..4),  // up to 256
+        5 to (3..4),  // up to 625
+        6 to (3..4),  // up to 1296
+        7 to (3..3),
+        8 to (3..3),
+        9 to (3..3),
+        10 to (3..3),
+        11 to (2..3),
+        12 to (2..3)
+    )
+    val (base, expRange) = basesAndExponentRanges.random(random)
+    val exponent = expRange.random(random)
     val answer = base.toDouble().pow(exponent).toInt()
 
     return MathQuestion(

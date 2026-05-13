@@ -28,6 +28,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -483,7 +484,7 @@ private fun StreakPill(count: Int) {
 }
 
 @Composable
-private fun QuestionContent(
+private fun ColumnScope.QuestionContent(
     state: QuestionsState,
     isVoided: Boolean,
     onAnswerSelected: (Int) -> Unit
@@ -500,7 +501,7 @@ private fun QuestionContent(
             alarm = alarm
         )
 
-        AnimatedVisibility(
+        androidx.compose.animation.AnimatedVisibility(
             visible = isVoided,
             enter = fadeIn(tween(180)) + scaleIn(tween(240), initialScale = 0.7f),
             exit = fadeOut(tween(150)),
@@ -512,7 +513,9 @@ private fun QuestionContent(
 
     if (useColumnLayout) {
         LazyColumn(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             itemsIndexed(currentQuestion.allAnswers) { _, answer ->
@@ -535,7 +538,9 @@ private fun QuestionContent(
     } else {
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -663,13 +668,19 @@ private fun QuestionCard(question: String, alarm: Boolean) {
                 },
                 label = "questionText"
             ) { text ->
+                val length = text.length
+                val (fontSize, lineHeight) = when {
+                    length > 22 -> 26.sp to 32.sp
+                    length > 14 -> 34.sp to 42.sp
+                    else -> 44.sp to 52.sp
+                }
                 Text(
                     text = text,
                     color = Color.White,
-                    fontSize = 44.sp,
+                    fontSize = fontSize,
                     fontWeight = FontWeight.Black,
                     textAlign = TextAlign.Center,
-                    lineHeight = 52.sp
+                    lineHeight = lineHeight
                 )
             }
         }
